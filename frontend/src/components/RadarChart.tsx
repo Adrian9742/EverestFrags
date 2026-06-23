@@ -1,0 +1,95 @@
+/**
+ * RadarChart — gráfico hexagonal SVG puro (sem biblioteca)
+ *
+ * 6 eixos: ADR, KAST, Rating, OpenK, Trade, Util
+ * Os valores são normalizados 0–100 (os scores já vêm assim do backend).
+ * Cor configurável via prop `color` (ex: "#cc2200" para o 1º, "#888" para o 2º, "#e0a82e" para o 3º).
+ */
+
+interface RadarProps {
+  adr: number;       // score combate → representa ADR
+  kast: number;      // score combate → representa KAST
+  rating: number;    // score combate → representa Rating
+  openK: number;     // score duelo → Opening Kills
+  trade: number;     // score duelo → Trade Kills
+  util: number;      // score utility
+  color?: string;
+  size?: number;
+}
+
+function polarToXY(angle: number, r: number, cx: number, cy: number) {
+  const rad = (angle - 90) * (Math.PI / 180);
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+export function RadarChart({
+  adr, kast, rating, openK, trade, util,
+  color = "#cc2200",
+  size = 120,
+}: RadarProps) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const maxR = size * 0.38;
+  const values = [adr, kast, rating, openK, trade, util].map(v => Math.min(100, Math.max(0, v)));
+  const angles = [0, 60, 120, 180, 240, 300];
+
+  // Polígono dos valores reais
+  const dataPoints = values.map((v, i) => {
+    const r = (v / 100) * maxR;
+    return polarToXY(angles[i], r, cx, cy);
+  });
+  const dataPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") + " Z";
+
+  // Grades hexagonais (25%, 50%, 75%, 100%)
+  const gridLevels = [0.25, 0.5, 0.75, 1.0];
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* Grades */}
+      {gridLevels.map((level, li) => {
+        const pts = angles.map(a => {
+          const p = polarToXY(a, maxR * level, cx, cy);
+          return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+        });
+        return (
+          <polygon
+            key={li}
+            points={pts.join(" ")}
+            fill="none"
+            stroke={li === 3 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)"}
+            strokeWidth={li === 3 ? 0.8 : 0.5}
+          />
+        );
+      })}
+
+      {/* Eixos */}
+      {angles.map((a, i) => {
+        const end = polarToXY(a, maxR, cx, cy);
+        return (
+          <line
+            key={i}
+            x1={cx} y1={cy}
+            x2={end.x.toFixed(1)} y2={end.y.toFixed(1)}
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={0.5}
+          />
+        );
+      })}
+
+      {/* Área do jogador */}
+      <path
+        d={dataPath}
+        fill={color}
+        fillOpacity={0.18}
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+
+      {/* Pontos nos vértices */}
+      {dataPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={2} fill={color} />
+      ))}
+    </svg>
+  );
+}

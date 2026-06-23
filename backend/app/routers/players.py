@@ -1,0 +1,76 @@
+"""
+Router — jogadores
+
+GET  /api/players          → público, lista todos os jogadores ativos
+POST /api/players          → admin, cria jogador
+GET  /api/players/{id}     → público, dados de um jogador
+PATCH /api/players/{id}    → admin, atualiza campos do jogador
+GET  /api/players/{id}/stats → autenticado, stats consolidadas do jogador
+"""
+
+from typing import List
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.schemas.player import PlayerCreate, PlayerUpdate, PlayerResponse, PlayerStatsResponse
+from app.services.auth_service import get_current_player, require_admin
+from app.services.player_service import get_all_players, get_player_by_id, create_player, update_player
+from app.services.ranking_service import get_player_stats
+from app.models.player import Player
+
+router = APIRouter(prefix="/api/players", tags=["players"])
+
+
+@router.get("", response_model=List[PlayerResponse])
+def list_players(db: Session = Depends(get_db)):
+    """Lista todos os jogadores ativos ordenados por nickname."""
+    return get_all_players(db)
+
+
+@router.post("", response_model=PlayerResponse, status_code=201)
+def create(
+    data: PlayerCreate,
+    db: Session = Depends(get_db),
+    _: Player = Depends(require_admin),
+):
+    """Cria um novo jogador. Apenas admins."""
+    return create_player(db, data)
+
+
+@router.get("/{player_id}", response_model=PlayerResponse)
+def get_player(player_id: int, db: Session = Depends(get_db)):
+    """Retorna dados públicos de um jogador."""
+    return get_player_by_id(db, player_id)
+
+
+@router.patch("/{player_id}", response_model=PlayerResponse)
+def update(
+    player_id: int,
+    data: PlayerUpdate,
+    db: Session = Depends(get_db),
+    _: Player = Depends(require_admin),
+):
+    """Atualiza campos de um jogador. Apenas admins."""
+    return update_player(db, player_id, data)
+
+
+@router.get("/{player_id}/stats", response_model=PlayerStatsResponse)
+def player_stats(
+    player_id: int,
+    db: Session = Depends(get_db),
+    _: Player = Depends(get_current_player),
+):
+    """Stats consolidadas de um jogador. Requer autenticação."""
+    # Garante que o player existe antes de calcular ranking
+    get_player_by_id(db, player_id)
+    stats = get_player_stats(db, player_id)
+    if stats is None:
+        # Player existe mas não tem partidas ainda
+        player = get_player_by_id(db, player_id)
+        return PlayerStatsResponse(
+            id=player.id,
+            nickname=player.nickname,
+            avatar_initials=player.avatar_initials,
+        )
+    return stats

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#080808;}
+  @keyframes efShake { 10%,90%{transform:translateX(-2px)} 20%,80%{transform:translateX(4px)} 30%,50%,70%{transform:translateX(-7px)} 40%,60%{transform:translateX(7px)} }
+  input.ef-slider{ -webkit-appearance:none; appearance:none; height:6px; outline:none; cursor:pointer; }
+  input.ef-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:15px; height:15px; border-radius:0; cursor:pointer; }
+  input.ef-slider::-moz-range-thumb{ width:15px; height:15px; border:0; border-radius:0; cursor:pointer; }
+  input.ef-slider--combat::-webkit-slider-thumb{ background:#cc2200; box-shadow:0 0 8px rgba(204,34,0,.6) }
+  input.ef-slider--combat::-moz-range-thumb{ background:#cc2200 }
+  input.ef-slider--duel::-webkit-slider-thumb{ background:#7c3aed; box-shadow:0 0 8px rgba(124,58,237,.6) }
+  input.ef-slider--duel::-moz-range-thumb{ background:#7c3aed }
+  input.ef-slider--utility::-webkit-slider-thumb{ background:#e0a82e; box-shadow:0 0 8px rgba(224,168,46,.6) }
+  input.ef-slider--utility::-moz-range-thumb{ background:#e0a82e }
+  ::placeholder{ color:#444 }
+</style>
+</helmet>
+
+<div style="position:relative;min-height:100vh;background:#080808;font-family:'Inter',sans-serif;color:#e8e8e8;overflow:hidden;padding:0 0 64px">
+
+  <div style="position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.22) 3px, rgba(0,0,0,0) 4px);mix-blend-mode:multiply;opacity:0.6"></div>
+  <div style="position:fixed;inset:0;pointer-events:none;z-index:51;background:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(204,34,0,0.10), transparent 60%)"></div>
+
+  <!-- LOGIN -->
+  <sc-if value="{{ showLogin }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;opacity:.06;pointer-events:none">
+        <line x1="50" y1="0" x2="50" y2="100" stroke="#cc2200" stroke-width="0.25"></line>
+        <line x1="0" y1="50" x2="100" y2="50" stroke="#cc2200" stroke-width="0.25"></line>
+        <circle cx="50" cy="50" r="13" fill="none" stroke="#cc2200" stroke-width="0.25"></circle>
+        <circle cx="50" cy="50" r="0.5" fill="#cc2200"></circle>
+      </svg>
+      <div style="position:relative;width:380px;max-width:100%;border:1px solid #1f1f1f;background:linear-gradient(180deg,#0e0e0e,#0a0a0a);padding:38px 34px 32px;animation:{{ shakeAnim }}">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#cc2200"></div>
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:28px">
+          <div style="width:40px;height:40px;border:2px solid #cc2200;display:flex;align-items:center;justify-content:center;background:#120504"><div style="width:12px;height:12px;background:#cc2200;transform:rotate(45deg)"></div></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:30px;letter-spacing:.5px"><span style="color:#f4f4f4">EVEREST</span><span style="color:#cc2200">FRAGS</span></div>
+        </div>
+        <label style="display:block;font-size:10px;letter-spacing:2px;color:#7a7a7a;margin-bottom:7px">NICKNAME</label>
+        <input value="{{ nick }}" onInput="{{ onNick }}" onKeyDown="{{ onLoginKey }}" placeholder="seu nick" style="width:100%;background:#070707;border:1px solid #232323;color:#eee;font-family:'JetBrains Mono',monospace;font-size:14px;padding:11px 13px;margin-bottom:16px;outline:none" />
+        <label style="display:block;font-size:10px;letter-spacing:2px;color:#7a7a7a;margin-bottom:7px">SENHA</label>
+        <input value="{{ pwd }}" onInput="{{ onPwd }}" onKeyDown="{{ onLoginKey }}" type="password" placeholder="senha" style="width:100%;background:#070707;border:1px solid #232323;color:#eee;font-family:'JetBrains Mono',monospace;font-size:14px;padding:11px 13px;margin-bottom:10px;outline:none" />
+        <sc-if value="{{ loginError }}"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#ff5a33;margin-bottom:8px">// credenciais inválidas</div></sc-if>
+        <button onClick="{{ doLogin }}" style="width:100%;margin-top:8px;background:#cc2200;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;letter-spacing:2px;padding:13px;cursor:pointer">LOGIN</button>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button onClick="{{ loginAdmin }}" style="flex:1;background:#0d0d0d;border:1px solid #232323;color:#cfcfcf;font-size:10px;letter-spacing:1.5px;padding:9px;cursor:pointer;font-family:'JetBrains Mono',monospace">DEMO · GESTOR</button>
+          <button onClick="{{ loginViewer }}" style="flex:1;background:#0d0d0d;border:1px solid #232323;color:#9a9a9a;font-size:10px;letter-spacing:1.5px;padding:9px;cursor:pointer;font-family:'JetBrains Mono',monospace">DEMO · PLAYER</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showDash }}" hint-placeholder-val="{{ true }}">
+  <!-- HEADER -->
+  <header style="position:relative;z-index:10;border-bottom:1px solid #1c1c1c;background:linear-gradient(180deg,#0c0c0c,#080808);padding:26px 48px 24px">
+    <div style="max-width:1320px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:18px">
+        <div style="width:46px;height:46px;border:2px solid #cc2200;display:flex;align-items:center;justify-content:center;background:#120504;box-shadow:0 0 18px rgba(204,34,0,.35)">
+          <div style="width:14px;height:14px;background:#cc2200;transform:rotate(45deg)"></div>
+        </div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:40px;line-height:0.92;letter-spacing:1px">
+            <span style="color:#f4f4f4">EVEREST</span><span style="color:#cc2200">FRAGS</span>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3.5px;color:#6a6a6a;margin-top:5px">CS2 · MIX SQUAD TRACKER</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;border:1px solid #1f1f1f;background:#101010;padding:8px 16px;min-width:78px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#f4f4f4;line-height:1">{{ totalMatches }}</span>
+          <span style="font-size:9.5px;letter-spacing:2px;color:#6a6a6a;margin-top:3px">PARTIDAS</span>
+        </div>
+        <div style="display:flex;flex-direction:column;border:1px solid #1f1f1f;background:#101010;padding:8px 16px;min-width:78px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#f4f4f4;line-height:1">{{ totalPlayers }}</span>
+          <span style="font-size:9.5px;letter-spacing:2px;color:#6a6a6a;margin-top:3px">PLAYERS</span>
+        </div>
+        <div style="width:1px;height:42px;background:#1f1f1f;margin:0 4px"></div>
+        <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(204,34,0,.3);background:rgba(204,34,0,.08);padding:9px 13px">
+          <span style="width:7px;height:7px;background:#cc2200;border-radius:50%"></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#ff5a33">{{ wCombat }}</span>
+          <span style="font-size:9.5px;letter-spacing:1.5px;color:#9a9a9a">COMBATE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);padding:9px 13px">
+          <span style="width:7px;height:7px;background:#7c3aed;border-radius:50%"></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#a472f5">{{ wDuel }}</span>
+          <span style="font-size:9.5px;letter-spacing:1.5px;color:#9a9a9a">DUELOS</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(224,168,46,.3);background:rgba(224,168,46,.08);padding:9px 13px">
+          <span style="width:7px;height:7px;background:#e0a82e;border-radius:50%"></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e8b948">{{ wUtility }}</span>
+          <span style="font-size:9.5px;letter-spacing:1.5px;color:#9a9a9a">UTILITY</span>
+        </div>
+
+        <sc-if value="{{ isAdmin }}">
+          <button onClick="{{ openConfig }}" style="display:flex;align-items:center;gap:8px;border:1px solid rgba(204,34,0,.35);background:rgba(204,34,0,.1);padding:9px 13px;cursor:pointer;color:#ff6a44;margin-left:2px">
+            <span style="width:8px;height:8px;background:#cc2200;transform:rotate(45deg)"></span>
+            <span style="font-size:9.5px;letter-spacing:1.5px;font-weight:700;font-family:'JetBrains Mono',monospace">CONFIG. PESOS</span>
+          </button>
+        </sc-if>
+        <div style="width:1px;height:42px;background:#1f1f1f;margin:0 2px"></div>
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:38px;height:38px;border:1px solid #2a2a2a;background:#0c0c0c;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:#d8d8d8">{{ userInitials }}</div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#eaeaea;line-height:1">{{ userNick }}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;color:{{ roleColor }};margin-top:3px">{{ roleLabel }}</div>
+          </div>
+          <button onClick="{{ logout }}" title="sair" style="margin-left:2px;width:34px;height:34px;border:1px solid #232323;background:#0c0c0c;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"></path><path d="M6.4 6.4a8 8 0 1 0 11.2 0"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main style="position:relative;z-index:10;max-width:1320px;margin:0 auto;padding:0 48px">
+
+    <!-- SECTION LABEL -->
+    <div style="display:flex;align-items:center;gap:14px;margin:34px 0 22px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:3px;color:#8a8a8a">PÓDIO</span>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,#222,transparent)"></span>
+    </div>
+
+    <!-- PODIUM -->
+    <div style="display:grid;grid-template-columns:1fr 1.08fr 1fr;gap:18px;align-items:end">
+      <sc-for list="{{ podium }}" as="p" hint-placeholder-count="3">
+        <div style="position:relative;border:1px solid {{ p.edge }};background:linear-gradient(180deg,{{ p.cardTop }},#0c0c0c);padding:22px 22px 20px;margin-top:{{ p.lift }}">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:{{ p.accent }}"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:46px;line-height:0.8;color:{{ p.accent }};text-shadow:0 0 20px {{ p.glow }}">{{ p.medal }}</div>
+              <div style="width:50px;height:50px;border:1px solid {{ p.edge }};background:#0a0a0a;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;color:#d8d8d8">{{ p.initials }}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:34px;line-height:1;color:#f4f4f4">{{ p.score }}</div>
+              <div style="font-size:9px;letter-spacing:2px;color:#6a6a6a;margin-top:2px">SCORE</div>
+            </div>
+          </div>
+
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;letter-spacing:0.5px;color:#f4f4f4;margin-bottom:4px">{{ p.nick }}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6f6f6f;margin-bottom:14px">{{ p.matches }} partidas · K/D {{ p.kd }}</div>
+
+          <!-- RADAR -->
+          <div style="display:flex;justify-content:center;margin:6px 0 14px">
+            <svg viewBox="0 0 190 190" style="width:190px;height:190px">
+              <sc-for list="{{ radarGeom.rings }}" as="ring" hint-placeholder-count="3">
+                <polygon points="{{ ring.pts }}" fill="none" stroke="#1d1d1d" stroke-width="1"></polygon>
+              </sc-for>
+              <sc-for list="{{ radarGeom.axes }}" as="ax" hint-placeholder-count="6">
+                <line x1="{{ ax.x1 }}" y1="{{ ax.y1 }}" x2="{{ ax.x2 }}" y2="{{ ax.y2 }}" stroke="#1d1d1d" stroke-width="1"></line>
+              </sc-for>
+              <polygon points="{{ p.radarPoints }}" fill="{{ p.radarFill }}" stroke="{{ p.accent }}" stroke-width="1.5"></polygon>
+              <sc-for list="{{ p.radarDots }}" as="d" hint-placeholder-count="6">
+                <circle cx="{{ d.x }}" cy="{{ d.y }}" r="2.4" fill="{{ p.accent }}"></circle>
+              </sc-for>
+              <sc-for list="{{ radarGeom.labels }}" as="lb" hint-placeholder-count="6">
+                <text x="{{ lb.x }}" y="{{ lb.y }}" text-anchor="{{ lb.anchor }}" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#7a7a7a" letter-spacing="0.5">{{ lb.t }}</text>
+              </sc-for>
+            </svg>
+          </div>
+
+          <!-- CATEGORY BARS -->
+          <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9.5px;letter-spacing:1.5px;color:#8a8a8a">COMBATE</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#ff5a33">{{ p.combat }}</span></div>
+              <div style="height:5px;background:#161616"><div style="height:100%;background:#cc2200;width:{{ p.combatW }}"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9.5px;letter-spacing:1.5px;color:#8a8a8a">DUELOS</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#a472f5">{{ p.duel }}</span></div>
+              <div style="height:5px;background:#161616"><div style="height:100%;background:#7c3aed;width:{{ p.duelW }}"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9.5px;letter-spacing:1.5px;color:#8a8a8a">UTILITY</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#e8b948">{{ p.util }}</span></div>
+              <div style="height:5px;background:#161616"><div style="height:100%;background:#e0a82e;width:{{ p.utilW }}"></div></div>
+            </div>
+          </div>
+
+          <!-- STAT PILLS -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#1a1a1a;border:1px solid #1a1a1a">
+            <div style="background:#0b0b0b;padding:9px 6px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e8e8e8">{{ p.adr }}</div><div style="font-size:8.5px;letter-spacing:1px;color:#666;margin-top:2px">ADR</div></div>
+            <div style="background:#0b0b0b;padding:9px 6px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e8e8e8">{{ p.rating }}</div><div style="font-size:8.5px;letter-spacing:1px;color:#666;margin-top:2px">RATING</div></div>
+            <div style="background:#0b0b0b;padding:9px 6px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e8e8e8">{{ p.kast }}</div><div style="font-size:8.5px;letter-spacing:1px;color:#666;margin-top:2px">KAST%</div></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- SECTION LABEL -->
+    <div style="display:flex;align-items:center;gap:14px;margin:40px 0 22px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:3px;color:#8a8a8a">CLASSIFICAÇÃO</span>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,#222,transparent)"></span>
+    </div>
+
+    <!-- GRID 4-11 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <sc-for list="{{ gridPlayers }}" as="p" hint-placeholder-count="8">
+        <div style="border:1px solid #181818;background:#0d0d0d;padding:16px">
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px">
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:#5a5a5a;width:26px">{{ p.rank }}</div>
+            <div style="width:36px;height:36px;border:1px solid #222;background:#0a0a0a;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#cfcfcf">{{ p.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:#eaeaea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.nick }}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#666">K/D {{ p.kd }}</div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;color:#f0f0f0">{{ p.score }}</div>
+          </div>
+          <div style="height:4px;background:#161616;margin-bottom:12px"><div style="height:100%;background:linear-gradient(90deg,#cc2200,#7c3aed);width:{{ p.scoreW }}"></div></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:5px;height:5px;background:#cc2200;border-radius:50%"></span><div style="flex:1;height:3px;background:#141414"><div style="height:100%;background:#cc2200;width:{{ p.combatW }}"></div></div><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#9a9a9a;width:18px;text-align:right">{{ p.combat }}</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:5px;height:5px;background:#7c3aed;border-radius:50%"></span><div style="flex:1;height:3px;background:#141414"><div style="height:100%;background:#7c3aed;width:{{ p.duelW }}"></div></div><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#9a9a9a;width:18px;text-align:right">{{ p.duel }}</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:5px;height:5px;background:#e0a82e;border-radius:50%"></span><div style="flex:1;height:3px;background:#141414"><div style="height:100%;background:#e0a82e;width:{{ p.utilW }}"></div></div><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#9a9a9a;width:18px;text-align:right">{{ p.util }}</span></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- LIST 12-15 -->
+    <div style="border:1px solid #181818;background:#0a0a0a;margin-top:14px">
+      <sc-for list="{{ listPlayers }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:16px;padding:13px 18px;border-bottom:1px solid #141414">
+          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:#4f4f4f;width:26px">{{ p.rank }}</div>
+          <div style="width:30px;height:30px;border:1px solid #1e1e1e;background:#0c0c0c;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:#bdbdbd">{{ p.initials }}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:#d8d8d8;width:180px">{{ p.nick }}</div>
+          <div style="display:flex;gap:18px;flex:1">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a8a">K/D <span style="color:#cfcfcf">{{ p.kd }}</span></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a8a">ADR <span style="color:#cfcfcf">{{ p.adr }}</span></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a8a">RTG <span style="color:#cfcfcf">{{ p.rating }}</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;width:200px">
+            <div style="flex:1;height:4px;background:#161616"><div style="height:100%;background:linear-gradient(90deg,#cc2200,#7c3aed);width:{{ p.scoreW }}"></div></div>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:#dcdcdc;width:30px;text-align:right">{{ p.score }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- FOOTER LEGEND -->
+    <footer style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:34px;padding-top:20px;border-top:1px solid #161616">
+      <div style="display:flex;gap:26px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:9px"><span style="width:10px;height:10px;background:#cc2200"></span><span style="font-size:11px;color:#8a8a8a"><b style="color:#cfcfcf">Combate 50%</b> — kills, dano, ADR, rating, KAST</span></div>
+        <div style="display:flex;align-items:center;gap:9px"><span style="width:10px;height:10px;background:#7c3aed"></span><span style="font-size:11px;color:#8a8a8a"><b style="color:#cfcfcf">Duelos 30%</b> — opening, trades, TTK</span></div>
+        <div style="display:flex;align-items:center;gap:9px"><span style="width:10px;height:10px;background:#e0a82e"></span><span style="font-size:11px;color:#8a8a8a"><b style="color:#cfcfcf">Utility 20%</b> — flashes, HE, incendiária</span></div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#444">SCORE NORMALIZADO MIN-MAX · GRUPO DE {{ totalPlayers }}</div>
+    </footer>
+  </main>
+  </sc-if>
+
+  <!-- MODAL CONFIG PESOS -->
+  <sc-if value="{{ configOpen }}">
+    <div style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.74);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="position:relative;width:480px;max-width:100%;border:1px solid #242424;background:linear-gradient(180deg,#101010,#0b0b0b);padding:30px 30px 26px">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#cc2200,#7c3aed,#e0a82e)"></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;letter-spacing:1px;color:#f4f4f4">CONFIGURAR PESOS DO RANKING</div>
+          <button onClick="{{ closeConfig }}" style="background:none;border:none;color:#777;font-size:19px;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
+        </div>
+        <div style="font-size:11px;color:#777;margin-bottom:26px">Os pesos se redistribuem automaticamente — o ranking recalcula ao vivo.</div>
+
+        <div style="margin-bottom:22px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+            <span style="display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1.5px;color:#eaeaea"><span style="width:9px;height:9px;background:#cc2200"></span>COMBATE</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:#ff5a33">{{ wCombat }}%</span>
+          </div>
+          <input type="range" min="0" max="100" value="{{ wCombat }}" onInput="{{ onCombat }}" class="ef-slider ef-slider--combat" style="width:100%;background:{{ combatTrack }}" />
+        </div>
+
+        <div style="margin-bottom:22px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+            <span style="display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1.5px;color:#eaeaea"><span style="width:9px;height:9px;background:#7c3aed"></span>DUELOS</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:#a472f5">{{ wDuel }}%</span>
+          </div>
+          <input type="range" min="0" max="100" value="{{ wDuel }}" onInput="{{ onDuel }}" class="ef-slider ef-slider--duel" style="width:100%;background:{{ duelTrack }}" />
+        </div>
+
+        <div style="margin-bottom:24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+            <span style="display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1.5px;color:#eaeaea"><span style="width:9px;height:9px;background:#e0a82e"></span>UTILITY</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:#e8b948">{{ wUtility }}%</span>
+          </div>
+          <input type="range" min="0" max="100" value="{{ wUtility }}" onInput="{{ onUtility }}" class="ef-slider ef-slider--utility" style="width:100%;background:{{ utilityTrack }}" />
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #1c1c1c;padding-top:18px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:1px;color:#3fbf6a">TOTAL: 100%</span>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ resetWeights }}" style="background:#0d0d0d;border:1px solid #242424;color:#9a9a9a;font-size:11px;letter-spacing:1px;padding:10px 16px;cursor:pointer;font-family:'JetBrains Mono',monospace">50 / 30 / 20</button>
+            <button onClick="{{ closeConfig }}" style="background:#cc2200;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;padding:10px 28px;cursor:pointer">SALVAR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = (() => {
+    let s = {};
+    try { s = JSON.parse(localStorage.getItem('everestfrags_v1') || '{}'); } catch (e) {}
+    return {
+      screen: s.screen || 'login',
+      role: s.role || 'viewer',
+      loggedNick: s.loggedNick || '',
+      nick: '', pwd: '', loginError: false,
+      weights: s.weights || { combat: 50, duel: 30, utility: 20 },
+      configOpen: false,
+    };
+  })();
+
+  persist() {
+    const { screen, role, loggedNick, weights } = this.state;
+    try { localStorage.setItem('everestfrags_v1', JSON.stringify({ screen, role, loggedNick, weights })); } catch (e) {}
+  }
+
+  doLogin(forcedRole) {
+    const nick = (this.state.nick || '').trim();
+    const pwd = this.state.pwd || '';
+    if (!forcedRole && (!nick || !pwd)) {
+      this.setState({ loginError: true });
+      setTimeout(() => this.setState({ loginError: false }), 550);
+      return;
+    }
+    const role = forcedRole || (nick.toLowerCase() === 'admin' ? 'admin' : 'viewer');
+    const loggedNick = forcedRole ? (role === 'admin' ? 'admin' : 'player') : nick;
+    this.setState({ screen: 'dashboard', role, loggedNick, pwd: '', loginError: false }, () => this.persist());
+  }
+
+  logout() { this.setState({ screen: 'login', configOpen: false }, () => this.persist()); }
+
+  setWeight(cat, val) {
+    val = Math.max(0, Math.min(100, Math.round(val)));
+    const cats = ['combat', 'duel', 'utility'];
+    const others = cats.filter(c => c !== cat);
+    const w = this.state.weights;
+    const remaining = 100 - val;
+    const sum = w[others[0]] + w[others[1]];
+    let nw;
+    if (sum === 0) {
+      const half = Math.round(remaining / 2);
+      nw = { [cat]: val, [others[0]]: half, [others[1]]: remaining - half };
+    } else {
+      const a = Math.round(remaining * (w[others[0]] / sum));
+      nw = { [cat]: val, [others[0]]: a, [others[1]]: remaining - a };
+    }
+    this.setState({ weights: nw }, () => this.persist());
+  }
+
+  resetWeights() { this.setState({ weights: { combat: 50, duel: 30, utility: 20 } }, () => this.persist()); }
+
+  // Stats agregados por jogador (somas e médias sobre ~10 partidas)
+  raw = [
+    { nick:'GodBR',         ini:'GB', m:11, kills:248, deaths:158, assists:52, dmg:31200, adr:94.2, adrDiff:21.5, rtg:1.32, kast:76, openK:48, trade:41, ttk:560, flash:22, heDmg:1180, heHit:44, fireHit:58, gren:2100 },
+    { nick:'clutchK1ng',    ini:'CK', m:11, kills:236, deaths:170, assists:46, dmg:29400, adr:88.1, adrDiff:14.2, rtg:1.24, kast:74, openK:52, trade:38, ttk:590, flash:14, heDmg:860,  heHit:31, fireHit:40, gren:1640 },
+    { nick:'Dr0pzin',       ini:'DZ', m:10, kills:214, deaths:166, assists:58, dmg:27800, adr:85.6, adrDiff:9.8,  rtg:1.18, kast:78, openK:31, trade:44, ttk:680, flash:26, heDmg:1320, heHit:51, fireHit:66, gren:2280 },
+    { nick:'bl4ster',       ini:'BL', m:11, kills:222, deaths:178, assists:41, dmg:27100, adr:82.0, adrDiff:6.5,  rtg:1.12, kast:71, openK:44, trade:30, ttk:610, flash:11, heDmg:720,  heHit:27, fireHit:33, gren:1380 },
+    { nick:'zEcA',          ini:'ZE', m:10, kills:198, deaths:172, assists:54, dmg:25600, adr:80.4, adrDiff:5.1,  rtg:1.08, kast:75, openK:26, trade:39, ttk:700, flash:24, heDmg:1090, heHit:42, fireHit:52, gren:1920 },
+    { nick:'k1to',          ini:'K1', m:11, kills:206, deaths:184, assists:38, dmg:25200, adr:78.8, adrDiff:3.2,  rtg:1.05, kast:70, openK:38, trade:33, ttk:640, flash:9,  heDmg:640,  heHit:24, fireHit:29, gren:1240 },
+    { nick:'Capivara',      ini:'CA', m:10, kills:182, deaths:170, assists:49, dmg:23900, adr:76.1, adrDiff:1.8,  rtg:1.02, kast:73, openK:22, trade:36, ttk:720, flash:19, heDmg:980,  heHit:38, fireHit:47, gren:1700 },
+    { nick:'Sniperzito',    ini:'SN', m:11, kills:194, deaths:188, assists:33, dmg:23400, adr:74.5, adrDiff:-0.6, rtg:0.99, kast:68, openK:41, trade:24, ttk:600, flash:7,  heDmg:520,  heHit:20, fireHit:25, gren:980  },
+    { nick:'matuto',        ini:'MT', m:10, kills:176, deaths:176, assists:45, dmg:22600, adr:73.2, adrDiff:-1.4, rtg:0.97, kast:72, openK:24, trade:31, ttk:710, flash:16, heDmg:870,  heHit:34, fireHit:41, gren:1520 },
+    { nick:'faZe.jr',       ini:'FJ', m:11, kills:170, deaths:182, assists:36, dmg:21800, adr:71.0, adrDiff:-3.9, rtg:0.94, kast:69, openK:33, trade:27, ttk:660, flash:10, heDmg:600,  heHit:23, fireHit:28, gren:1100 },
+    { nick:'rushB',         ini:'RB', m:10, kills:164, deaths:186, assists:31, dmg:20900, adr:69.4, adrDiff:-6.2, rtg:0.91, kast:66, openK:36, trade:21, ttk:630, flash:6,  heDmg:440,  heHit:17, fireHit:22, gren:820  },
+    { nick:'n00bMaster',    ini:'NM', m:10, kills:152, deaths:184, assists:42, dmg:20100, adr:67.8, adrDiff:-7.8, rtg:0.88, kast:70, openK:19, trade:29, ttk:740, flash:18, heDmg:760,  heHit:30, fireHit:38, gren:1340 },
+    { nick:'Tuninho',       ini:'TU', m:11, kills:148, deaths:192, assists:34, dmg:19400, adr:65.1, adrDiff:-10.4,rtg:0.85, kast:67, openK:21, trade:25, ttk:700, flash:12, heDmg:560,  heHit:22, fireHit:27, gren:1060 },
+    { nick:'ecoFrag',       ini:'EC', m:10, kills:138, deaths:190, assists:39, dmg:18600, adr:63.0, adrDiff:-13.1,rtg:0.82, kast:68, openK:16, trade:23, ttk:760, flash:15, heDmg:700,  heHit:28, fireHit:34, gren:1260 },
+    { nick:'AdminDoServer', ini:'AD', m:11, kills:126, deaths:204, assists:28, dmg:17200, adr:60.2, adrDiff:-16.8,rtg:0.78, kast:64, openK:14, trade:18, ttk:820, flash:5,  heDmg:380,  heHit:15, fireHit:19, gren:740  },
+  ];
+
+  norm(val, min, max, invert) {
+    if (max === min) return 50;
+    return invert ? (max - val) / (max - min) * 100 : (val - min) / (max - min) * 100;
+  }
+
+  computeRanking() {
+    const P = this.raw;
+    const range = (key) => {
+      const vals = P.map(p => p[key]);
+      return { min: Math.min(...vals), max: Math.max(...vals) };
+    };
+    const r = {};
+    ['kills','deaths','assists','dmg','adr','adrDiff','rtg','kast','openK','trade','ttk','flash','heDmg','heHit','fireHit','gren'].forEach(k => r[k] = range(k));
+
+    const scored = P.map(p => {
+      const n = (k, inv) => this.norm(p[k], r[k].min, r[k].max, inv);
+      const combatParts = [n('kills'), n('deaths',true), n('assists'), n('dmg'), n('adr'), n('adrDiff'), n('rtg'), n('kast'), n('gren')];
+      const duelParts   = [n('openK'), n('trade'), n('ttk',true)];
+      const utilParts   = [n('flash'), n('heDmg'), n('heHit'), n('fireHit')];
+      const avg = a => a.reduce((s,x)=>s+x,0) / a.length;
+      const combat = avg(combatParts);
+      const duel   = avg(duelParts);
+      const util   = avg(utilParts);
+      const W = this.state.weights;
+      const score  = combat*(W.combat/100) + duel*(W.duel/100) + util*(W.utility/100);
+      return {
+        ...p, combat, duel, util, score,
+        radarVals: [ n('adr'), n('kast'), n('rtg'), n('openK'), n('trade'), util ]
+      };
+    });
+    scored.sort((a,b) => b.score - a.score);
+    return scored;
+  }
+
+  radarGeometry() {
+    const cx = 95, cy = 92, R = 64, labelR = 80;
+    const N = 6;
+    const pt = (i, rad) => {
+      const a = (-90 + i * 60) * Math.PI / 180;
+      return { x: cx + rad * Math.cos(a), y: cy + rad * Math.sin(a) };
+    };
+    const rings = [0.34, 0.67, 1].map(f => ({
+      pts: Array.from({length:N}, (_,i) => { const q = pt(i, R*f); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(' ')
+    }));
+    const axes = Array.from({length:N}, (_,i) => { const q = pt(i, R); return { x1:cx, y1:cy, x2:+q.x.toFixed(1), y2:+q.y.toFixed(1) }; });
+    const labelText = ['ADR','KAST','RTG','OPEN','TRD','UTIL'];
+    const labels = Array.from({length:N}, (_,i) => {
+      const q = pt(i, labelR);
+      let anchor = 'middle';
+      if (q.x > cx + 6) anchor = 'start';
+      else if (q.x < cx - 6) anchor = 'end';
+      return { x:+q.x.toFixed(1), y:+(q.y+3).toFixed(1), t:labelText[i], anchor };
+    });
+    return { rings, axes, labels, cx, cy, R };
+  }
+
+  radarFor(vals, geom) {
+    const { cx, cy, R } = geom;
+    const dots = vals.map((v,i) => {
+      const a = (-90 + i*60) * Math.PI / 180;
+      const rad = R * Math.max(0, Math.min(100, v)) / 100;
+      return { x:+(cx + rad*Math.cos(a)).toFixed(1), y:+(cy + rad*Math.sin(a)).toFixed(1) };
+    });
+    return { points: dots.map(d => `${d.x},${d.y}`).join(' '), dots };
+  }
+
+  renderVals() {
+    const ranked = this.computeRanking();
+    const geom = this.radarGeometry();
+    const kd = p => (p.kills / p.deaths).toFixed(2);
+    const pad = (n) => String(n).padStart(2, '0');
+
+    const podiumStyle = [
+      { accent:'#cc2200', edge:'#3a1108', cardTop:'#160806', glow:'rgba(204,34,0,.5)',  radarFill:'rgba(204,34,0,.16)',  medal:'01', lift:'0px'  },
+      { accent:'#d8d8d8', edge:'#2a2a2a', cardTop:'#131313', glow:'rgba(220,220,220,.3)',radarFill:'rgba(216,216,216,.12)', medal:'02', lift:'24px' },
+      { accent:'#e0a82e', edge:'#3a2c0d', cardTop:'#161106', glow:'rgba(224,168,46,.4)', radarFill:'rgba(224,168,46,.14)', medal:'03', lift:'36px' },
+    ];
+
+    const podium = ranked.slice(0,3).map((p,i) => {
+      const rd = this.radarFor(p.radarVals, geom);
+      return {
+        ...podiumStyle[i],
+        nick: p.nick, initials: p.ini, matches: p.m,
+        score: Math.round(p.score), kd: kd(p),
+        adr: p.adr.toFixed(1), rating: p.rtg.toFixed(2), kast: Math.round(p.kast),
+        combat: Math.round(p.combat), duel: Math.round(p.duel), util: Math.round(p.util),
+        combatW: p.combat.toFixed(1)+'%', duelW: p.duel.toFixed(1)+'%', utilW: p.util.toFixed(1)+'%',
+        radarPoints: rd.points, radarDots: rd.dots,
+      };
+    });
+
+    const mapRow = (p, idx) => ({
+      rank: pad(idx+1), nick: p.nick, initials: p.ini, kd: kd(p),
+      score: Math.round(p.score), scoreW: p.score.toFixed(1)+'%',
+      adr: p.adr.toFixed(1), rating: p.rtg.toFixed(2),
+      combat: Math.round(p.combat), duel: Math.round(p.duel), util: Math.round(p.util),
+      combatW: p.combat.toFixed(1)+'%', duelW: p.duel.toFixed(1)+'%', utilW: p.util.toFixed(1)+'%',
+    });
+
+    const gridPlayers = ranked.slice(3,11).map((p,i) => mapRow(p, i+3));
+    const listPlayers = ranked.slice(11).map((p,i) => mapRow(p, i+11));
+
+    const w = this.state.weights;
+    const mkTrack = (val, col) => `linear-gradient(90deg, ${col} ${val}%, #1a1a1a ${val}%)`;
+
+    return {
+      podium, gridPlayers, listPlayers, radarGeom: geom,
+      totalPlayers: this.raw.length,
+      totalMatches: Math.max(...this.raw.map(p => p.m)),
+
+      screen: this.state.screen,
+      showLogin: this.state.screen === 'login',
+      showDash: this.state.screen === 'dashboard',
+      isAdmin: this.state.role === 'admin',
+      roleLabel: this.state.role === 'admin' ? 'GESTOR' : 'PLAYER',
+      roleColor: this.state.role === 'admin' ? '#cc2200' : '#6a6a6a',
+      userInitials: (this.state.loggedNick || 'PL').slice(0, 2).toUpperCase(),
+      userNick: this.state.loggedNick || 'player',
+      nick: this.state.nick, pwd: this.state.pwd,
+      loginError: this.state.loginError,
+      shakeAnim: this.state.loginError ? 'efShake .45s cubic-bezier(.36,.07,.19,.97)' : 'none',
+      onNick: e => this.setState({ nick: e.target.value }),
+      onPwd: e => this.setState({ pwd: e.target.value }),
+      onLoginKey: e => { if (e.key === 'Enter') this.doLogin(null); },
+      doLogin: () => this.doLogin(null),
+      loginAdmin: () => this.doLogin('admin'),
+      loginViewer: () => this.doLogin('viewer'),
+      logout: () => this.logout(),
+
+      configOpen: this.state.configOpen,
+      openConfig: () => this.setState({ configOpen: true }),
+      closeConfig: () => this.setState({ configOpen: false }),
+      resetWeights: () => this.resetWeights(),
+      onCombat: e => this.setWeight('combat', +e.target.value),
+      onDuel: e => this.setWeight('duel', +e.target.value),
+      onUtility: e => this.setWeight('utility', +e.target.value),
+      wCombat: w.combat, wDuel: w.duel, wUtility: w.utility,
+      combatTrack: mkTrack(w.combat, '#cc2200'),
+      duelTrack: mkTrack(w.duel, '#7c3aed'),
+      utilityTrack: mkTrack(w.utility, '#e0a82e'),
+    };
+  }
+}
+</script>
+</body>
+</html>

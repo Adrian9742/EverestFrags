@@ -1,0 +1,152 @@
+/* ==========================================================================
+   EverestFrags — CSS Global
+   Paleta: #080808 fundo, #cc2200 primário, #7c3aed secundário, #e0a82e acento
+   Fontes: Barlow Condensed (display) + Inter (corpo) + JetBrains Mono (dados)
+   ========================================================================== */
+
+/* Fontes via Google Fonts (carregadas também no index.html) */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  background: #080808;
+  color: #e8e8e8;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove outline feio nos inputs, substitui por borda colorida on focus */
+input:focus, select:focus, textarea:focus, button:focus {
+  outline: none;
+}
+
+/* Placeholder global */
+::placeholder {
+  color: #444;
+}
+
+/* Scrollbar custom — discreta, combina com o tema */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* ==========================================================================
+   Animação de shake — usada no card de login quando as credenciais falham
+   ========================================================================== */
+@keyframes efShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+/* ==========================================================================
+   Sliders customizados — usados no WeightConfigModal
+   Aparência: trilho colorido, thumb quadrado (não circular) estilo CS2
+   ========================================================================== */
+input.ef-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+
+/* Thumbs quadrados por categoria */
+input.ef-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 0;
+  cursor: pointer;
+}
+input.ef-slider::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* Combate — vermelho */
+input.ef-slider--combat::-webkit-slider-thumb {
+  background: #cc2200;
+  box-shadow: 0 0 8px rgba(204, 34, 0, 0.6);
+}
+input.ef-slider--combat::-moz-range-thumb {
+  background: #cc2200;
+}
+
+/* Duelos — roxo */
+input.ef-slider--duel::-webkit-slider-thumb {
+  background: #7c3aed;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
+}
+input.ef-slider--duel::-moz-range-thumb {
+  background: #7c3aed;
+}
+
+/* Utility — dourado */
+input.ef-slider--utility::-webkit-slider-thumb {
+  background: #e0a82e;
+  box-shadow: 0 0 8px rgba(224, 168, 46, 0.6);
+}
+input.ef-slider--utility::-moz-range-thumb {
+  background: #e0a82e;
+}
+
+/* ==========================================================================
+   Utilitários de tipografia
+   ========================================================================== */
+.font-display {
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ==========================================================================
+   Scanlines — aplicar via className em wrappers de página
+   ========================================================================== */
+.scanlines::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.22) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+}

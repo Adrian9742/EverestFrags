@@ -17,6 +17,9 @@ dist/
 # VSCode
 .vscode/
 
+# Claude Code (arquivos de sessão interna)
+.claude/
+
 # Sistema
 .DS_Store
 Thumbs.db
