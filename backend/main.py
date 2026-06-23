@@ -34,7 +34,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routers import auth, players, matches, ranking, sort
+from app.routers import auth, players, matches, ranking, sort, steam_auth
 
 # Importa todos os models para garantir que o create_all os detecte
 import app.models  # noqa: F401
@@ -60,6 +60,7 @@ app.add_middleware(
 
 # Registra todos os routers
 app.include_router(auth.router)
+app.include_router(steam_auth.router)
 app.include_router(players.router)
 app.include_router(matches.router)
 app.include_router(ranking.router)

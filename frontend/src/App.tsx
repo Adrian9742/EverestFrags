@@ -3,6 +3,7 @@
  *
  * Rotas:
  *   /login         → público (Login)
+ *   /auth/callback → público (SteamCallback — processa redirect do Steam OpenID)
  *   /              → público (Dashboard/Ranking)
  *   /matches       → público (histórico)
  *   /matches/:id   → público (detalhes da partida)
@@ -16,6 +17,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminRoute } from "./components/ProtectedRoute";
 import { Login } from "./pages/Login";
+import { SteamCallback } from "./pages/SteamCallback";
 import { Dashboard } from "./pages/Dashboard";
 import { Matches } from "./pages/Matches";
 import { AddMatch } from "./pages/AddMatch";
@@ -27,6 +29,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<SteamCallback />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/matches/new" element={<AdminRoute><AddMatch /></AdminRoute>} />

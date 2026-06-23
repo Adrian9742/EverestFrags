@@ -6,18 +6,28 @@
  * Shake animation no card quando as credenciais são inválidas.
  */
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export function Login() {
   const [nick, setNick] = useState("");
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("// credenciais inválidas");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Mostra erro se o Steam OpenID falhou (redirect de volta com ?error=steam_auth_failed)
+  useEffect(() => {
+    if (searchParams.get("error") === "steam_auth_failed") {
+      setError(true);
+      setErrorMsg("// falha na autenticação com a Steam");
+    }
+  }, [searchParams]);
 
   async function doLogin() {
     if (!nick || !pwd) return;
@@ -28,6 +38,7 @@ export function Login() {
       navigate("/");
     } catch {
       setError(true);
+      setErrorMsg("// credenciais inválidas");
       setShake(true);
       setTimeout(() => setShake(false), 600);
     } finally {
@@ -137,7 +148,7 @@ export function Login() {
 
         {error && (
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#ff5a33", marginBottom: 8 }}>
-            // credenciais inválidas
+            {errorMsg}
           </div>
         )}
 
@@ -153,6 +164,33 @@ export function Login() {
         >
           {loading ? "AUTENTICANDO..." : "LOGIN"}
         </button>
+
+        {/* Divider */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0 14px" }}>
+          <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a3a3a", letterSpacing: "1px" }}>OU</span>
+          <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
+        </div>
+
+        {/* Botão Steam */}
+        <button
+          onClick={() => { window.location.href = "/api/auth/steam"; }}
+          style={{
+            width: "100%", background: "#101b2b", border: "1px solid #1a3a5c",
+            color: "#c6d4df", fontFamily: "'Barlow Condensed', sans-serif",
+            fontWeight: 700, fontSize: 17, letterSpacing: 1.5, padding: "11px 13px",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+          }}
+        >
+          {/* Ícone Steam (SVG inline simplificado) */}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#c6d4df">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38l3.02-6.25A3.5 3.5 0 0 1 12 10.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5 3.5 3.5 0 0 1-2.95-1.62l-4.9 2.03C5.78 19.6 8.73 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-4 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+          </svg>
+          ENTRAR COM A STEAM
+        </button>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, color: "#3a3a3a", textAlign: "center", marginTop: 8, letterSpacing: "0.5px" }}>
+          players do grupo — acesso via conta Steam
+        </div>
       </div>
     </div>
   );

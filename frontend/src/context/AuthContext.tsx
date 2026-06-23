@@ -15,6 +15,8 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   login: (nickname: string, password: string) => Promise<void>;
+  // Usado pelo SteamCallback após receber token e player via query string
+  loginWithToken: (token: string, playerData: PlayerPublic) => void;
   logout: () => void;
 }
 
@@ -46,6 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPlayer(res.player);
   }
 
+  function loginWithToken(token: string, playerData: PlayerPublic) {
+    localStorage.setItem("ef_token", token);
+    localStorage.setItem("ef_player", JSON.stringify(playerData));
+    setPlayer(playerData);
+  }
+
   function logout() {
     authApi.logout().catch(() => {}); // fire-and-forget
     localStorage.removeItem("ef_token");
@@ -61,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: player?.role === "admin",
         isLoading,
         login,
+        loginWithToken,
         logout,
       }}
     >
