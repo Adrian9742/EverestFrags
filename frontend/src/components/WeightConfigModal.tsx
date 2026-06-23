@@ -1,34 +1,28 @@
 /**
- * WeightConfigModal — modal com sliders interdependentes para configurar pesos
+ * WeightConfigModal — sliders interdependentes para pesos do ranking
  *
- * Quando um slider muda, os outros dois são redistribuídos proporcionalmente
- * para manter a soma em 100%.
- * O botão Salvar só ativa quando a soma for exatamente 100%.
- *
- * ATENÇÃO: os pesos são enviados como decimais (0.50, 0.30, 0.20).
- * Internamente o modal trabalha com inteiros (50, 30, 20) para os sliders.
+ * Paleta rebrand v2: teal #0e7490, indigo #6366f1, ouro #e0a82e
+ * Slider muda um → os outros dois redistribuem proporcionalmente para manter soma = 100%.
+ * Pesos são enviados como decimais (0.50) mas tratados internamente como inteiros (50).
  */
 
 import { useState } from "react";
 import { rankingApi } from "../api/client";
 
 interface WeightConfigModalProps {
-  initialCombat: number;   // ex: 0.50
-  initialDuel: number;     // ex: 0.30
-  initialUtility: number;  // ex: 0.20
+  initialCombat: number;
+  initialDuel: number;
+  initialUtility: number;
   onClose: () => void;
   onSaved: () => void;
 }
 
 type Category = "combat" | "duel" | "utility";
 
-export function WeightConfigModal({
-  initialCombat, initialDuel, initialUtility,
-  onClose, onSaved,
-}: WeightConfigModalProps) {
+export function WeightConfigModal({ initialCombat, initialDuel, initialUtility, onClose, onSaved }: WeightConfigModalProps) {
   const [weights, setWeights] = useState({
-    combat: Math.round(initialCombat * 100),
-    duel: Math.round(initialDuel * 100),
+    combat:  Math.round(initialCombat * 100),
+    duel:    Math.round(initialDuel * 100),
     utility: Math.round(initialUtility * 100),
   });
   const [saving, setSaving] = useState(false);
@@ -41,7 +35,6 @@ export function WeightConfigModal({
     const remaining = 100 - newValue;
     const others = (["combat", "duel", "utility"] as Category[]).filter(c => c !== category);
     const currentSum = weights[others[0]] + weights[others[1]];
-
     let newA: number, newB: number;
     if (currentSum === 0) {
       newA = Math.round(remaining / 2);
@@ -51,22 +44,15 @@ export function WeightConfigModal({
       newA = Math.round(remaining * ratio);
       newB = remaining - newA;
     }
-
     setWeights({ ...weights, [category]: newValue, [others[0]]: newA, [others[1]]: newB });
   }
 
   async function handleSave() {
     if (!isValid) return;
-    setSaving(true);
-    setError("");
+    setSaving(true); setError("");
     try {
-      await rankingApi.updateConfig(
-        weights.combat / 100,
-        weights.duel / 100,
-        weights.utility / 100
-      );
-      onSaved();
-      onClose();
+      await rankingApi.updateConfig(weights.combat / 100, weights.duel / 100, weights.utility / 100);
+      onSaved(); onClose();
     } catch (e: any) {
       setError(e.message ?? "Erro ao salvar");
     } finally {
@@ -74,104 +60,77 @@ export function WeightConfigModal({
     }
   }
 
-  const sliders: { key: Category; label: string; color: string; cls: string }[] = [
-    { key: "combat", label: "COMBATE", color: "#cc2200", cls: "ef-slider ef-slider--combat" },
-    { key: "duel", label: "DUELOS", color: "#7c3aed", cls: "ef-slider ef-slider--duel" },
-    { key: "utility", label: "UTILITY", color: "#e0a82e", cls: "ef-slider ef-slider--utility" },
+  const sliders: { key: Category; label: string; color: string; numColor: string; cls: string }[] = [
+    { key: "combat",  label: "COMBATE", color: "#0e7490", numColor: "#22d3ee", cls: "ef-slider ef-slider--combat" },
+    { key: "duel",    label: "DUELOS",  color: "#6366f1", numColor: "#818cf8", cls: "ef-slider ef-slider--duel" },
+    { key: "utility", label: "UTILITY", color: "#e0a82e", numColor: "#e8b948", cls: "ef-slider ef-slider--utility" },
   ];
 
   return (
     <div
-      style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        zIndex: 100, padding: 24,
-      }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.74)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        style={{
-          width: 420, maxWidth: "100%", background: "#0e0e0e",
-          border: "1px solid #1f1f1f", padding: "28px 28px 24px",
-          position: "relative",
-        }}
-      >
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "#cc2200" }} />
+      <div style={{ position: "relative", width: 480, maxWidth: "100%", border: "1px solid #222e3b", background: "linear-gradient(180deg,#11171f,#0c1015)", padding: "30px 30px 26px" }}>
+        {/* Linha topo tricolor */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#0e7490,#6366f1,#e0a82e)" }} />
 
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: 1, color: "#f4f4f4", marginBottom: 24 }}>
-          CONFIGURAR PESOS DO RANKING
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 24, letterSpacing: 1, color: "#f0f9ff" }}>
+            CONFIGURAR PESOS DO RANKING
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#566476", fontSize: 19, cursor: "pointer", lineHeight: 1, padding: "2px 4px" }}>✕</button>
+        </div>
+        <div style={{ fontSize: 11, color: "#566476", marginBottom: 26 }}>
+          Os pesos se redistribuem automaticamente — o ranking recalcula ao vivo.
         </div>
 
         {sliders.map(s => (
-          <div key={s.key} style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 10, letterSpacing: "2px", color: "#7a7a7a" }}>{s.label}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700, color: s.color }}>
+          <div key={s.key} style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 9 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, letterSpacing: "1.5px", color: "#e3ebf3" }}>
+                <span style={{ width: 9, height: 9, background: s.color, flexShrink: 0 }} />
+                {s.label}
+              </span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 18, color: s.numColor }}>
                 {weights[s.key]}%
               </span>
             </div>
             <input
-              type="range"
-              min={1}
-              max={98}
+              type="range" min={1} max={98}
               value={weights[s.key]}
               onChange={e => handleSlider(s.key, parseInt(e.target.value))}
               className={s.cls}
-              style={{
-                width: "100%",
-                background: `linear-gradient(to right, ${s.color} ${weights[s.key]}%, #2a2a2a ${weights[s.key]}%)`,
-              }}
+              style={{ width: "100%", background: `linear-gradient(to right, ${s.color} ${weights[s.key]}%, #1e2a36 ${weights[s.key]}%)` }}
             />
           </div>
         ))}
 
-        {/* Indicador de total */}
-        <div
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 13,
-            fontWeight: 700,
-            color: isValid ? "#44bb44" : "#ff5a33",
-            textAlign: "center",
-            marginBottom: 20,
-            padding: "8px",
-            border: `1px solid ${isValid ? "#44bb4422" : "#ff5a3322"}`,
-            background: isValid ? "#44bb4408" : "#ff5a3308",
-          }}
-        >
-          TOTAL: {total}% {isValid ? "✓" : `— FALTAM ${100 - total}%`}
-        </div>
-
         {error && (
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#ff5a33", marginBottom: 12, textAlign: "center" }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#f87171", marginBottom: 12, textAlign: "center" }}>
             // {error}
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, background: "transparent", border: "1px solid #2a2a2a",
-              color: "#888", fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: 14, letterSpacing: 1, padding: "10px", cursor: "pointer",
-            }}
-          >
-            CANCELAR
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!isValid || saving}
-            style={{
-              flex: 1, background: isValid ? "#cc2200" : "#2a2a2a",
-              border: "none", color: isValid ? "#fff" : "#555",
-              fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
-              fontSize: 14, letterSpacing: 1, padding: "10px",
-              cursor: isValid ? "pointer" : "not-allowed",
-            }}
-          >
-            {saving ? "SALVANDO..." : "SALVAR"}
-          </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #1b2530", paddingTop: 18 }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, letterSpacing: "1px", color: isValid ? "#34d399" : "#f87171" }}>
+            TOTAL: {total}% {isValid ? "✓" : `— FALTAM ${100 - total}%`}
+          </span>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => setWeights({ combat: 50, duel: 30, utility: 20 })}
+              style={{ background: "#0e141b", border: "1px solid #222e3b", color: "#6a7a8d", fontSize: 11, letterSpacing: "1px", padding: "10px 16px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              50 / 30 / 20
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!isValid || saving}
+              style={{ background: isValid ? "#0e7490" : "#1e2a36", border: "none", color: isValid ? "#fff" : "#566476", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "1.5px", padding: "10px 28px", cursor: isValid ? "pointer" : "not-allowed" }}
+            >
+              {saving ? "SALVANDO..." : "SALVAR"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,13 +1,12 @@
 /* ==========================================================================
-   EverestFrags — CSS Global
-   Paleta: #080808 fundo, #cc2200 primário, #7c3aed secundário, #e0a82e acento
+   EverestFrags — CSS Global (rebrand v2)
+   Paleta: #070a0e fundo, #0e7490 teal primário, #6366f1 indigo, #e0a82e ouro
    Fontes: Barlow Condensed (display) + Inter (corpo) + JetBrains Mono (dados)
+   Shape: bordas arredondadas (18px divs, 14px inputs/buttons, 999px spans)
    ========================================================================== */
 
-/* Fontes via Google Fonts (carregadas também no index.html) */
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-/* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -19,41 +18,37 @@ html, body, #root {
 }
 
 body {
-  background: #080808;
-  color: #e8e8e8;
+  background: #070a0e;
+  color: #dde6f0;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Remove outline feio nos inputs, substitui por borda colorida on focus */
 input:focus, select:focus, textarea:focus, button:focus {
   outline: none;
 }
 
-/* Placeholder global */
 ::placeholder {
-  color: #444;
+  color: #334155;
 }
 
-/* Scrollbar custom — discreta, combina com o tema */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0e13; }
+::-webkit-scrollbar-thumb { background: #1e2a36; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #2a3a4c; }
+
+/* Bordas arredondadas globais (shape language do rebrand) */
+div[style*="border:1px solid"], div[style*="border:2px solid"] { border-radius: 18px; overflow: hidden; }
+span[style*="border:1px solid"], span[style*="border:2px solid"] { border-radius: 999px; }
+input, select, textarea { border-radius: 14px; }
+button { border-radius: 14px; }
+input[type=range] { border-radius: 999px; }
 
 /* ==========================================================================
-   Animação de shake — usada no card de login quando as credenciais falham
+   Shake — login com credenciais inválidas
    ========================================================================== */
 @keyframes efShake {
   10%, 90% { transform: translateX(-2px); }
@@ -63,90 +58,58 @@ input:focus, select:focus, textarea:focus, button:focus {
 }
 
 /* ==========================================================================
-   Sliders customizados — usados no WeightConfigModal
-   Aparência: trilho colorido, thumb quadrado (não circular) estilo CS2
+   Sliders — WeightConfigModal
+   Thumb circular com glow por categoria
    ========================================================================== */
 input.ef-slider {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  border-radius: 0;
+  border-radius: 999px;
   outline: none;
   cursor: pointer;
   border: none;
 }
 
-/* Thumbs quadrados por categoria */
 input.ef-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 15px;
-  height: 15px;
-  border-radius: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
   cursor: pointer;
 }
 input.ef-slider::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   border: 0;
-  border-radius: 0;
+  border-radius: 50%;
   cursor: pointer;
 }
 
-/* Combate — vermelho */
+/* Combate — teal */
 input.ef-slider--combat::-webkit-slider-thumb {
-  background: #cc2200;
-  box-shadow: 0 0 8px rgba(204, 34, 0, 0.6);
+  background: #0e7490;
+  box-shadow: 0 0 8px rgba(14, 116, 144, 0.6);
 }
-input.ef-slider--combat::-moz-range-thumb {
-  background: #cc2200;
-}
+input.ef-slider--combat::-moz-range-thumb { background: #0e7490; }
 
-/* Duelos — roxo */
+/* Duelos — indigo */
 input.ef-slider--duel::-webkit-slider-thumb {
-  background: #7c3aed;
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
+  background: #6366f1;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
 }
-input.ef-slider--duel::-moz-range-thumb {
-  background: #7c3aed;
-}
+input.ef-slider--duel::-moz-range-thumb { background: #6366f1; }
 
 /* Utility — dourado */
 input.ef-slider--utility::-webkit-slider-thumb {
   background: #e0a82e;
   box-shadow: 0 0 8px rgba(224, 168, 46, 0.6);
 }
-input.ef-slider--utility::-moz-range-thumb {
-  background: #e0a82e;
-}
+input.ef-slider--utility::-moz-range-thumb { background: #e0a82e; }
 
 /* ==========================================================================
-   Utilitários de tipografia
+   Tipografia utilitária
    ========================================================================== */
-.font-display {
-  font-family: 'Barlow Condensed', sans-serif;
-}
-
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* ==========================================================================
-   Scanlines — aplicar via className em wrappers de página
-   ========================================================================== */
-.scanlines::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 999;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0) 0px,
-    rgba(0, 0, 0, 0) 2px,
-    rgba(0, 0, 0, 0.22) 3px,
-    rgba(0, 0, 0, 0) 4px
-  );
-  opacity: 0.6;
-  mix-blend-mode: multiply;
-}
+.font-display { font-family: 'Barlow Condensed', sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }

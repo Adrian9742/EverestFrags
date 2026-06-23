@@ -17,6 +17,9 @@ interface RadarProps {
   size?: number;
 }
 
+// Cores por posição no pódio (teal, prata, ouro — consistente com novo design)
+export const PODIUM_COLORS = ["#0e7490", "#6366f1", "#e0a82e"];
+
 function polarToXY(angle: number, r: number, cx: number, cy: number) {
   const rad = (angle - 90) * (Math.PI / 180);
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
@@ -24,7 +27,7 @@ function polarToXY(angle: number, r: number, cx: number, cy: number) {
 
 export function RadarChart({
   adr, kast, rating, openK, trade, util,
-  color = "#cc2200",
+  color = "#0e7490",
   size = 120,
 }: RadarProps) {
   const cx = size / 2;
@@ -56,8 +59,8 @@ export function RadarChart({
             key={li}
             points={pts.join(" ")}
             fill="none"
-            stroke={li === 3 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)"}
-            strokeWidth={li === 3 ? 0.8 : 0.5}
+            stroke={li === 3 ? "#1a2530" : "rgba(26,37,48,0.7)"}
+            strokeWidth={li === 3 ? 1 : 0.5}
           />
         );
       })}
@@ -70,7 +73,7 @@ export function RadarChart({
             key={i}
             x1={cx} y1={cy}
             x2={end.x.toFixed(1)} y2={end.y.toFixed(1)}
-            stroke="rgba(255,255,255,0.06)"
+            stroke="#1a2530"
             strokeWidth={0.5}
           />
         );

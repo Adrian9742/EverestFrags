@@ -1,11 +1,10 @@
 /**
- * RankCard — card médio para posições 4–11 e card compacto para 12+
+ * RankCard — card médio para posições 4–11 e compacto para 12+
  *
- * Modo "compact" reduz a altura para listagem densa (12º em diante).
+ * Paleta rebrand v2: teal/indigo/ouro, fundo #0e141b, bordas #172029
  */
 
 import { type RankingEntry } from "../api/client";
-import { CategoryBar } from "./CategoryBar";
 
 interface RankCardProps {
   entry: RankingEntry;
@@ -13,123 +12,106 @@ interface RankCardProps {
 }
 
 export function RankCard({ entry, compact = false }: RankCardProps) {
+  const scoreW = `${Math.round(entry.score_final)}%`;
+  const combatW = `${Math.round(entry.score_combat)}%`;
+  const duelW   = `${Math.round(entry.score_duel)}%`;
+  const utilW   = `${Math.round(entry.score_utility)}%`;
+
   if (compact) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "8px 14px",
-          border: "1px solid #161616",
-          background: "#0a0a0a",
-          marginBottom: 4,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            color: "#4a4a4a",
-            minWidth: 22,
-          }}
-        >
-          {String(entry.rank).padStart(2, "0")}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 16,
+        padding: "13px 18px", borderBottom: "1px solid #141b23",
+        background: "#0a0e13",
+      }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 14, color: "#3a4757", width: 26 }}>
+          {entry.rank}
         </span>
-        <div
-          style={{
-            width: 22,
-            height: 22,
-            background: "#181818",
-            border: "1px solid #2a2a2a",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 9,
-            color: "#888",
-          }}
-        >
+        <div style={{
+          width: 30, height: 30, border: "1px solid #1d2833", background: "#0d1218",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, color: "#9aabbd",
+        }}>
           {entry.avatar_initials}
         </div>
-        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 600, color: "#d0d0d0", flex: 1 }}>
+        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 19, color: "#c6d2e0", width: 180 }}>
           {entry.player_nickname}
         </span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#6a6a6a" }}>
-          K/D {entry.kd_ratio.toFixed(2)}
-        </span>
-        <span
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 15,
-            fontWeight: 700,
-            color: "#c0c0c0",
-            minWidth: 30,
-            textAlign: "right",
-          }}
-        >
-          {Math.round(entry.score_final)}
-        </span>
+        <div style={{ display: "flex", gap: 18, flex: 1 }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#5d6d80" }}>
+            K/D <span style={{ color: "#aebccd" }}>{entry.kd_ratio.toFixed(2)}</span>
+          </span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#5d6d80" }}>
+            ADR <span style={{ color: "#aebccd" }}>{entry.adr.toFixed(1)}</span>
+          </span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#5d6d80" }}>
+            RTG <span style={{ color: "#aebccd" }}>{entry.hltv_rating.toFixed(2)}</span>
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, width: 200 }}>
+          <div style={{ flex: 1, height: 4, background: "#151d26" }}>
+            <div style={{ height: "100%", width: scoreW, background: "linear-gradient(90deg,#0e7490,#6366f1)" }} />
+          </div>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 18, color: "#c6d2e0", width: 30, textAlign: "right" }}>
+            {Math.round(entry.score_final)}
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        border: "1px solid #1a1a1a",
-        background: "#0a0a0a",
-        padding: "14px 16px",
-        position: "relative",
-      }}
-    >
-      {/* Cabeçalho */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 13,
-            color: "#4a4a4a",
-            minWidth: 24,
-          }}
-        >
-          {String(entry.rank).padStart(2, "0")}
-        </span>
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            background: "#141414",
-            border: "1px solid #2a2a2a",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10,
-            color: "#888",
-          }}
-        >
+    <div style={{ border: "1px solid #172029", background: "#0e141b", padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15, color: "#404e60", width: 26 }}>
+          {entry.rank}
+        </div>
+        <div style={{
+          width: 36, height: 36, border: "1px solid #1e2a36", background: "#0a0e13",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: "#aebccd",
+        }}>
           {entry.avatar_initials}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, color: "#e0e0e0", lineHeight: 1.1 }}>
-            {entry.player_nickname.length > 8 ? entry.player_nickname.slice(0, 7) + "…" : entry.player_nickname}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 19, color: "#e3ebf3",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>
+            {entry.player_nickname}
           </div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#5a5a5a" }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#475569" }}>
             K/D {entry.kd_ratio.toFixed(2)}
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: "#d0d0d0", lineHeight: 1 }}>
-            {Math.round(entry.score_final)}
-          </div>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 24, color: "#f0f0f0" }}>
+          {Math.round(entry.score_final)}
         </div>
       </div>
 
-      {/* Barras */}
-      <CategoryBar label="COMBATE" value={entry.score_combat} color="#cc2200" />
-      <CategoryBar label="DUELOS" value={entry.score_duel} color="#7c3aed" />
-      <CategoryBar label="UTILITY" value={entry.score_utility} color="#e0a82e" />
+      {/* Score bar */}
+      <div style={{ height: 4, background: "#151d26", marginBottom: 12 }}>
+        <div style={{ height: "100%", background: "linear-gradient(90deg,#0e7490,#6366f1)", width: scoreW }} />
+      </div>
+
+      {/* Category bars mini */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {[
+          { color: "#0e7490", width: combatW, score: Math.round(entry.score_combat) },
+          { color: "#6366f1", width: duelW,   score: Math.round(entry.score_duel) },
+          { color: "#e0a82e", width: utilW,   score: Math.round(entry.score_utility) },
+        ].map((c, ci) => (
+          <div key={ci} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 5, height: 5, background: c.color, borderRadius: "50%", flexShrink: 0 }} />
+            <div style={{ flex: 1, height: 3, background: "#141b23" }}>
+              <div style={{ height: "100%", background: c.color, width: c.width }} />
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, color: "#6a7a8d", width: 18, textAlign: "right" }}>
+              {c.score}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

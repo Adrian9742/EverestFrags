@@ -5,10 +5,12 @@
  *   /login         → público (Login)
  *   /auth/callback → público (SteamCallback — processa redirect do Steam OpenID)
  *   /              → público (Dashboard/Ranking)
- *   /matches       → público (histórico)
- *   /matches/:id   → público (detalhes da partida)
+ *   /matches       → público (histórico de partidas)
  *   /matches/new   → admin (adicionar partida)
- *   /sort          → público (sorteio)
+ *   /sort          → público (sorteio de times)
+ *   /profile       → autenticado (perfil pessoal + alterar senha)
+ *   /admin         → admin (gestão de players e partidas)
+ *   /chat          → público (placeholder — WebSocket em desenvolvimento)
  *
  * AuthProvider envolve tudo para que qualquer componente acesse useAuth().
  */
@@ -22,6 +24,9 @@ import { Dashboard } from "./pages/Dashboard";
 import { Matches } from "./pages/Matches";
 import { AddMatch } from "./pages/AddMatch";
 import { Sort } from "./pages/Sort";
+import { Profile } from "./pages/Profile";
+import { Admin } from "./pages/Admin";
+import { Chat } from "./pages/Chat";
 
 export default function App() {
   return (
@@ -34,6 +39,9 @@ export default function App() {
           <Route path="/matches" element={<Matches />} />
           <Route path="/matches/new" element={<AdminRoute><AddMatch /></AdminRoute>} />
           <Route path="/sort" element={<Sort />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="/chat" element={<Chat />} />
           {/* Rota curinga — redireciona para o dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
