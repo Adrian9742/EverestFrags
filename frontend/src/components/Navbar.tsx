@@ -15,6 +15,8 @@ export function Navbar() {
 
   const tabs = [
     { label: "RANKING",    path: "/" },
+    { label: "SORTEIO",    path: "/sort" },
+    { label: "PARTIDAS",   path: "/matches" },
     { label: "MEU PERFIL", path: "/profile" },
     { label: "CHAT",       path: "/chat" },
     ...(isAdmin ? [
