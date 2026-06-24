@@ -4,8 +4,7 @@ Seed — dados iniciais do EverestFrags
 Executa UMA vez para criar:
   1. Admin inicial (nickname: "admin", senha: "fragstack2025")
   2. Linha inicial da ranking_config (pesos padrão 50/30/20)
-  3. Players de exemplo (15 jogadores com nicks genéricos)
-  4. Partidas de exemplo com stats fictícias para testar o ranking
+  3. Players reais do grupo (13 jogadores com Steam ID vinculado)
 
 IMPORTANTE: Trocar a senha do admin após o primeiro login!
 
@@ -18,11 +17,9 @@ graças às checagens de existência antes de cada insert.
 """
 
 import os
+import re
 import sys
-import random
-from datetime import date, timedelta
 
-# Adiciona o diretório backend ao path para imports funcionarem
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from dotenv import load_dotenv
@@ -30,33 +27,43 @@ load_dotenv()
 
 from app.database import SessionLocal, engine, Base
 from app.models.player import Player
-from app.models.match import Match, PlayerMatchStats
 from app.models.ranking_config import RankingConfig
 from app.services.auth_service import hash_password
 
-# Cria as tabelas se não existirem
 Base.metadata.create_all(bind=engine)
 
 
-SAMPLE_PLAYERS = [
-    ("GodBR", "GB"),
-    ("Dr0pzin", "DZ"),
-    ("clutchK1ng", "CK"),
-    ("zEcA", "ZE"),
-    ("bl4ster", "BL"),
-    ("Capixaba", "CA"),
-    ("k1to", "K1"),
-    ("FalleNico", "FN"),
-    ("rush_b_bb", "RB"),
-    ("AWPer420", "AW"),
-    ("NikoClone", "NC"),
-    ("s1mplesBR", "SB"),
-    ("TarikBR", "TB"),
-    ("m0nesy_br", "MB"),
-    ("ZywOoBR", "ZB"),
+# nickname exato da Steam, steam_id 64-bit
+# Nota: kadutx e hiraeth têm o mesmo display name na Steam.
+# kadutx usa a vanity URL como nickname para evitar conflito de unicidade.
+# Quando logar via Steam, o sistema vai tentar atualizar para "hiraeth" mas
+# vai detectar o conflito e manter "kadutx" (comportamento esperado).
+REAL_PLAYERS = [
+    ("dx",                    "76561198957778494"),
+    ("FalleN <HyperX>",       "76561198144449321"),
+    ("Famoso degusta Forte",  "76561198278595427"),
+    ("kadutx",                "76561199151136880"),
+    ("4N6Z",                  "76561198401187819"),
+    ("Andreyy",               "76561198365150318"),
+    ("hiraeth",               "76561198433581475"),
+    ("defxultzz",             "76561198872980462"),
+    ("Macacaino",             "76561199214622140"),
+    ("Motel de R$ 30",        "76561198884962636"),
+    ("pintofreitas",          "76561199034174380"),
+    ("k1lemod",               "76561199128919753"),
+    ("teago",                 "76561198137528891"),
 ]
 
-MAPS = ["de_dust2", "de_mirage", "de_inferno", "de_nuke", "de_ancient", "de_anubis"]
+
+def make_initials(nickname: str) -> str:
+    """Deriva 2 iniciais ignorando caracteres não-alfanuméricos."""
+    clean = re.sub(r'[^a-zA-Z0-9 ]', '', nickname).strip()
+    if not clean:
+        return "??"
+    words = clean.split()
+    w0 = words[0]
+    second = words[1][0] if len(words) > 1 else (w0[1] if len(w0) > 1 else w0[0])
+    return (w0[0] + second).upper()
 
 
 def seed():
@@ -73,94 +80,54 @@ def seed():
             )
             db.add(admin)
             db.flush()
-            print("✓ Admin criado (nick: admin, senha: fragstack2025) — TROQUE A SENHA!")
+            print("+ Admin criado (nick: admin, senha: fragstack2025) -- TROQUE A SENHA!")
         else:
-            print("- Admin já existe, pulando")
+            print("- Admin ja existe, pulando")
 
         # 2. Ranking config
         if not db.query(RankingConfig).first():
             config = RankingConfig(weight_combat=0.50, weight_duel=0.30, weight_utility=0.20)
             db.add(config)
             db.flush()
-            print("✓ Ranking config criada (50/30/20)")
+            print("+ Ranking config criada (50/30/20)")
         else:
-            print("- Ranking config já existe, pulando")
+            print("- Ranking config ja existe, pulando")
 
-        # 3. Players de exemplo
-        created_players = []
-        for nickname, initials in SAMPLE_PLAYERS:
-            existing = db.query(Player).filter(Player.nickname == nickname).first()
-            if not existing:
-                p = Player(
-                    nickname=nickname,
-                    avatar_initials=initials,
-                    password_hash=hash_password("player123"),
-                    role="viewer",
-                    is_active=True,
-                )
-                db.add(p)
-                db.flush()
-                created_players.append(p)
-            else:
-                created_players.append(existing)
+        # 3. Players reais
+        created = 0
+        skipped = 0
+        for nickname, steam_id in REAL_PLAYERS:
+            # Evita duplicata por steam_id ou nickname
+            exists_by_steam = db.query(Player).filter(Player.steam_id == steam_id).first()
+            exists_by_nick  = db.query(Player).filter(Player.nickname == nickname).first()
 
-        print(f"✓ {len(SAMPLE_PLAYERS)} players verificados/criados")
+            if exists_by_steam or exists_by_nick:
+                skipped += 1
+                continue
 
-        # 4. Partidas de exemplo — 11 partidas com 10 jogadores cada
-        if db.query(Match).count() == 0:
-            random.seed(42)  # seed fixo para resultados reproduzíveis
-            today = date.today()
+            p = Player(
+                nickname=nickname,
+                steam_id=steam_id,
+                avatar_initials=make_initials(nickname),
+                password_hash=None,   # acesso apenas via Steam OpenID
+                role="viewer",
+                is_active=True,
+            )
+            db.add(p)
+            db.flush()
+            created += 1
 
-            for match_num in range(11):
-                played = today - timedelta(days=match_num * 3)
-                match = Match(
-                    played_at=played,
-                    map_name=random.choice(MAPS),
-                    notes=f"Partida de exemplo #{match_num + 1}",
-                )
-                db.add(match)
-                db.flush()
+        db.commit()
+        print(f"+ {created} players criados, {skipped} ja existiam")
 
-                # Sorteia 10 jogadores para a partida
-                participants = random.sample(created_players, min(10, len(created_players)))
-                for player in participants:
-                    kills = random.randint(5, 30)
-                    deaths = random.randint(5, 25)
-                    assists = random.randint(0, 10)
-                    stat = PlayerMatchStats(
-                        match_id=match.id,
-                        player_id=player.id,
-                        kills=kills,
-                        deaths=deaths,
-                        assists=assists,
-                        damage_total=kills * random.randint(80, 130),
-                        adr=round(random.uniform(50, 120), 2),
-                        adr_difference=round(random.uniform(-20, 40), 2),
-                        hltv_rating=round(random.uniform(0.7, 1.8), 3),
-                        kast_percent=round(random.uniform(45, 85), 2),
-                        opening_kills=random.randint(0, 5),
-                        trade_kills=random.randint(0, 6),
-                        time_to_kill_ms=random.randint(200, 600),
-                        flash_assists=random.randint(0, 8),
-                        grenade_damage=random.randint(0, 150),
-                        he_enemies_hit=random.randint(0, 4),
-                        fire_enemies_hit=random.randint(0, 3),
-                    )
-                    db.add(stat)
-
-            db.commit()
-            print("✓ 11 partidas de exemplo criadas com stats fictícias")
-        else:
-            db.commit()
-            print("- Partidas já existem, pulando")
-
-        print("\n✅ Seed concluído! Inicie o servidor com:")
-        print("   uvicorn main:app --reload --port 8000")
-        print("\n⚠️  Troque a senha do admin em /api/auth/change-password após o primeiro login!")
+        print("\n== Seed concluido! ==")
+        print("Inicie o servidor com:")
+        print("  uvicorn main:app --reload --port 8001")
+        print("\nATENCAO: Troque a senha do admin apos o primeiro login!")
 
     except Exception as e:
         db.rollback()
-        print(f"\n❌ Erro durante seed: {e}")
+        print(f"\nERRO durante seed: {e}")
         raise
     finally:
         db.close()
