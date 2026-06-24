@@ -203,6 +203,123 @@ function CreatePlayerModal({ onClose, onSuccess }: CreateModalProps) {
   );
 }
 
+// ─── Modal de Edição ──────────────────────────────────────────────────────────
+
+interface EditModalProps {
+  player: PlayerResponse;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function EditPlayerModal({ player, onClose, onSuccess }: EditModalProps) {
+  const [nick, setNick] = useState(player.nickname);
+  const [steamId, setSteamId] = useState(player.steam_id ?? "");
+  const [msg, setMsg] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const canSubmit = nick.trim() && !loading;
+
+  async function handleSubmit() {
+    setMsg(""); setIsError(false);
+    if (!nick.trim()) { setMsg("Nickname é obrigatório."); setIsError(true); return; }
+    setLoading(true);
+    try {
+      await playersApi.update(player.id, {
+        nickname: nick.trim() !== player.nickname ? nick.trim() : undefined,
+        steam_id: steamId.trim() || null,
+      });
+      setMsg("Player atualizado!");
+      setIsError(false);
+      setTimeout(() => { onSuccess(); onClose(); }, 800);
+    } catch (e: any) {
+      setMsg(e.message ?? "Erro ao atualizar.");
+      setIsError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", background: "#080c11", border: "1px solid #1e2a36",
+    color: "#e3ebf3", fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
+    padding: "10px 12px", outline: "none", boxSizing: "border-box",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block", fontSize: 9.5, letterSpacing: "1.5px",
+    color: "#566476", marginBottom: 6,
+  };
+
+  return (
+    <div
+      onKeyDown={e => e.key === "Escape" && onClose()}
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(4,8,12,0.85)", backdropFilter: "blur(3px)" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: 480, maxWidth: "95vw", border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", position: "relative", boxShadow: "0 0 60px rgba(14,116,144,0.12)" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#0e7490,#6366f1)" }} />
+
+        <div style={{ padding: "28px 32px 20px", borderBottom: "1px solid #131d27" }}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "3px", color: "#e3ebf3" }}>
+            EDITAR PLAYER
+          </div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a4757", marginTop: 4 }}>
+            // #{player.id} · {player.nickname}
+          </div>
+        </div>
+
+        <div style={{ padding: "24px 32px 28px" }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>NICKNAME</label>
+            <input
+              autoFocus
+              value={nick}
+              onChange={e => setNick(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={labelStyle}>STEAM ID <span style={{ fontSize: 9, color: "#3a4757" }}>(vazio = desvincular)</span></label>
+            <input
+              value={steamId}
+              onChange={e => setSteamId(e.target.value)}
+              placeholder="76561198xxxxxxxxx"
+              style={inputStyle}
+            />
+            <div style={{ marginTop: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, color: "#3a4757" }}>
+              // encontre em steamid.io digitando o perfil do jogador
+            </div>
+          </div>
+
+          {msg && (
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: isError ? "#f87171" : "#34d399", marginBottom: 16, padding: "8px 12px", background: isError ? "rgba(248,113,113,0.06)" : "rgba(52,211,153,0.06)", border: `1px solid ${isError ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)"}` }}>
+              {isError ? "// erro: " : "// "}{msg}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              onClick={onClose}
+              style={{ flex: 1, background: "none", border: "1px solid #1e2a36", color: "#566476", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "2px", padding: "12px", cursor: "pointer" }}
+            >
+              CANCELAR
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              style={{ flex: 2, background: canSubmit ? "#0e7490" : "#0a2733", border: `1px solid ${canSubmit ? "#0e7490" : "#1a3a45"}`, color: canSubmit ? "#fff" : "#2a5060", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "2px", padding: "12px", cursor: canSubmit ? "pointer" : "default" }}
+            >
+              {loading ? "SALVANDO..." : "SALVAR"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Página Principal ─────────────────────────────────────────────────────────
 
 export function Admin() {
@@ -210,6 +327,7 @@ export function Admin() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("players");
   const [showModal, setShowModal] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<PlayerResponse | null>(null);
 
   const [players, setPlayers] = useState<PlayerResponse[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
@@ -337,7 +455,7 @@ export function Admin() {
           ) : (
             <div style={{ border: "1px solid #172029", background: "#0a0e13" }}>
               {/* Header da tabela */}
-              <div style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 180px", borderBottom: "1px solid #172029", padding: "10px 18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 240px", borderBottom: "1px solid #172029", padding: "10px 18px" }}>
                 {["ID", "NICKNAME", "ROLE", "STEAM", "STATUS", "AÇÕES"].map(h => (
                   <span key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868" }}>{h}</span>
                 ))}
@@ -348,7 +466,7 @@ export function Admin() {
                 </div>
               )}
               {players.map(p => (
-                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 180px", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #11171f", opacity: p.is_active ? 1 : 0.45 }}>
+                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 240px", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #11171f", opacity: p.is_active ? 1 : 0.45 }}>
                   <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#3a4757" }}>#{p.id}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 28, height: 28, border: "1px solid #1e2a36", background: "#0d1218", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, color: "#566476", flexShrink: 0 }}>
@@ -367,10 +485,16 @@ export function Admin() {
                   </span>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button
+                      onClick={() => setEditingPlayer(p)}
+                      style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 8px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: "rgba(14,116,144,.08)", border: "1px solid rgba(14,116,144,.3)", color: "#22d3ee" }}
+                    >
+                      EDITAR
+                    </button>
+                    <button
                       onClick={() => toggleActive(p)}
                       style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 8px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: p.is_active ? "#1a0d0d" : "#0a1a0a", border: `1px solid ${p.is_active ? "#5a1010" : "#1a4a1a"}`, color: p.is_active ? "#f87171" : "#34d399" }}
                     >
-                      {p.is_active ? "DESATIVAR" : "ATIVAR"}
+                      {p.is_active ? "DESAT." : "ATIVAR"}
                     </button>
                     <button
                       onClick={() => toggleRole(p)}
@@ -444,6 +568,15 @@ export function Admin() {
       {showModal && (
         <CreatePlayerModal
           onClose={() => setShowModal(false)}
+          onSuccess={loadPlayers}
+        />
+      )}
+
+      {/* Modal de edição */}
+      {editingPlayer && (
+        <EditPlayerModal
+          player={editingPlayer}
+          onClose={() => setEditingPlayer(null)}
           onSuccess={loadPlayers}
         />
       )}
