@@ -2,10 +2,8 @@
  * Gestão — página /admin (somente admin)
  *
  * Duas abas:
- *  1. PLAYERS — lista todos os players; permite criar novo, ativar/desativar, promover/rebaixar
- *  2. PARTIDAS — lista paginada de partidas; permite deletar
- *
- * Paleta rebrand v2: #070a0e fundo, #0e7490 teal, #6366f1 indigo, #e0a82e ouro.
+ *  1. PLAYERS — lista todos os players; modal de cadastro completo; ativar/desativar; promover/rebaixar
+ *  2. PARTIDAS — lista paginada; deletar
  */
 
 import { useEffect, useState } from "react";
@@ -16,31 +14,211 @@ import { Navbar } from "../components/Navbar";
 
 type Tab = "players" | "matches";
 
+// ─── Modal de Cadastro ────────────────────────────────────────────────────────
+
+interface CreateModalProps {
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreatePlayerModal({ onClose, onSuccess }: CreateModalProps) {
+  const [nick, setNick] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [role, setRole] = useState("viewer");
+  const [steamId, setSteamId] = useState("");
+  const [msg, setMsg] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const initials = nick.trim()
+    ? (() => {
+        const words = nick.trim().split(/\s+/);
+        return (words[0][0] + (words[1]?.[0] ?? words[0].slice(-1)[0])).toUpperCase();
+      })()
+    : "??";
+
+  const pwdMismatch = pwd && pwdConfirm && pwd !== pwdConfirm;
+  const canSubmit = nick.trim() && (!pwd || !pwdMismatch) && !loading;
+
+  async function handleSubmit() {
+    setMsg(""); setIsError(false);
+    if (!nick.trim()) { setMsg("Nickname é obrigatório."); setIsError(true); return; }
+    if (pwdMismatch) { setMsg("As senhas não coincidem."); setIsError(true); return; }
+    setLoading(true);
+    try {
+      await playersApi.create({
+        nickname: nick.trim(),
+        password: pwd || undefined,
+        role,
+        steam_id: steamId.trim() || undefined,
+      });
+      setMsg("Player criado com sucesso!");
+      setIsError(false);
+      setTimeout(() => { onSuccess(); onClose(); }, 1000);
+    } catch (e: any) {
+      setMsg(e.message ?? "Erro ao criar player.");
+      setIsError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function onKey(e: React.KeyboardEvent) {
+    if (e.key === "Escape") onClose();
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", background: "#080c11", border: "1px solid #1e2a36",
+    color: "#e3ebf3", fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
+    padding: "10px 12px", outline: "none", boxSizing: "border-box",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block", fontSize: 9.5, letterSpacing: "1.5px",
+    color: "#566476", marginBottom: 6,
+  };
+
+  return (
+    <div
+      onKeyDown={onKey}
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(4,8,12,0.85)", backdropFilter: "blur(3px)" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: 520, maxWidth: "95vw", border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", position: "relative", boxShadow: "0 0 60px rgba(14,116,144,0.12)" }}>
+
+        {/* Barra teal topo */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#0e7490,#6366f1)" }} />
+
+        {/* Header */}
+        <div style={{ padding: "28px 32px 20px", borderBottom: "1px solid #131d27", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "3px", color: "#e3ebf3" }}>NOVO PLAYER</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a4757", marginTop: 4, letterSpacing: "0.5px" }}>// cadastrar membro do grupo</div>
+          </div>
+          {/* Preview do avatar */}
+          <div style={{ width: 56, height: 56, border: "2px solid #0e7490", background: "#04222b", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 22, color: nick ? "#22d3ee" : "#2a3a4a", letterSpacing: 1 }}>{initials}</span>
+            {nick && <div style={{ position: "absolute", bottom: 2, right: 2, width: 8, height: 8, borderRadius: "50%", background: "#0e7490" }} />}
+          </div>
+        </div>
+
+        {/* Formulário */}
+        <div style={{ padding: "24px 32px 28px" }}>
+
+          {/* Nickname */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>NICKNAME <span style={{ color: "#0e7490" }}>*</span></label>
+            <input
+              autoFocus
+              value={nick}
+              onChange={e => setNick(e.target.value)}
+              placeholder="ex: GodBR"
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Senha + Confirmar */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+            <div>
+              <label style={labelStyle}>SENHA <span style={{ fontSize: 9, color: "#3a4757" }}>(opcional)</span></label>
+              <input
+                type="password"
+                value={pwd}
+                onChange={e => setPwd(e.target.value)}
+                placeholder="vazio = Steam only"
+                style={{ ...inputStyle, borderColor: pwdMismatch ? "#7f1d1d" : "#1e2a36" }}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>CONFIRMAR SENHA</label>
+              <input
+                type="password"
+                value={pwdConfirm}
+                onChange={e => setPwdConfirm(e.target.value)}
+                placeholder="repita a senha"
+                style={{ ...inputStyle, borderColor: pwdMismatch ? "#7f1d1d" : "#1e2a36" }}
+              />
+            </div>
+          </div>
+          {pwdMismatch && (
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#f87171", marginBottom: 12, marginTop: -8 }}>
+              // senhas não coincidem
+            </div>
+          )}
+
+          {/* Role + Steam ID */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12, marginBottom: 24 }}>
+            <div>
+              <label style={labelStyle}>ROLE</label>
+              <select value={role} onChange={e => setRole(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                <option value="viewer">viewer</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>STEAM ID <span style={{ fontSize: 9, color: "#3a4757" }}>(opcional)</span></label>
+              <input
+                value={steamId}
+                onChange={e => setSteamId(e.target.value)}
+                placeholder="76561198xxxxxxxxx"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Info box */}
+          <div style={{ background: "rgba(14,116,144,0.05)", border: "1px solid rgba(14,116,144,0.15)", padding: "10px 14px", marginBottom: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a5060", lineHeight: 1.8 }}>
+            <span style={{ color: "#0e7490" }}>viewer</span> → acessa ranking e sorteio · <span style={{ color: "#6366f1" }}>admin</span> → gestão completa
+            <br />
+            Sem senha → player só consegue entrar via Steam OpenID
+          </div>
+
+          {/* Feedback */}
+          {msg && (
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: isError ? "#f87171" : "#34d399", marginBottom: 16, padding: "8px 12px", background: isError ? "rgba(248,113,113,0.06)" : "rgba(52,211,153,0.06)", border: `1px solid ${isError ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)"}` }}>
+              {isError ? "// erro: " : "// "}{msg}
+            </div>
+          )}
+
+          {/* Botões */}
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              onClick={onClose}
+              style={{ flex: 1, background: "none", border: "1px solid #1e2a36", color: "#566476", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "2px", padding: "12px", cursor: "pointer" }}
+            >
+              CANCELAR
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              style={{ flex: 2, background: canSubmit ? "#0e7490" : "#0a2733", border: `1px solid ${canSubmit ? "#0e7490" : "#1a3a45"}`, color: canSubmit ? "#fff" : "#2a5060", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "2px", padding: "12px", cursor: canSubmit ? "pointer" : "default" }}
+            >
+              {loading ? "CRIANDO..." : "CRIAR PLAYER"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Página Principal ─────────────────────────────────────────────────────────
+
 export function Admin() {
   const { player, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("players");
+  const [showModal, setShowModal] = useState(false);
 
-  // Players
   const [players, setPlayers] = useState<PlayerResponse[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
 
-  // Novo player
-  const [newNick, setNewNick] = useState("");
-  const [newPwd, setNewPwd] = useState("");
-  const [newRole, setNewRole] = useState("viewer");
-  const [newSteamId, setNewSteamId] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createMsg, setCreateMsg] = useState("");
-  const [createError, setCreateError] = useState(false);
-
-  // Partidas
   const [matches, setMatches] = useState<MatchResponse[]>([]);
   const [matchPage, setMatchPage] = useState(1);
   const [matchTotal, setMatchTotal] = useState(0);
   const [loadingMatches, setLoadingMatches] = useState(false);
 
-  // Redireciona se não for admin
   useEffect(() => {
     if (!isLoading && (!player || !isAdmin)) navigate("/");
   }, [player, isAdmin, isLoading, navigate]);
@@ -61,27 +239,6 @@ export function Admin() {
   useEffect(() => { if (!isLoading && isAdmin) loadPlayers(); }, [isAdmin, isLoading]);
   useEffect(() => { if (!isLoading && isAdmin && tab === "matches") loadMatches(matchPage); }, [tab, matchPage, isAdmin, isLoading]);
 
-  async function handleCreatePlayer() {
-    setCreateMsg(""); setCreateError(false);
-    if (!newNick.trim()) { setCreateMsg("Nickname obrigatório."); setCreateError(true); return; }
-    setCreating(true);
-    try {
-      await playersApi.create({
-        nickname: newNick.trim(),
-        password: newPwd || undefined,
-        role: newRole,
-        steam_id: newSteamId.trim() || undefined,
-      });
-      setNewNick(""); setNewPwd(""); setNewRole("viewer"); setNewSteamId("");
-      setCreateMsg("Player criado com sucesso.");
-      loadPlayers();
-    } catch (e: any) {
-      setCreateMsg(e.message ?? "Erro ao criar player."); setCreateError(true);
-    } finally {
-      setCreating(false);
-    }
-  }
-
   async function toggleActive(p: PlayerResponse) {
     try {
       await playersApi.update(p.id, { is_active: !p.is_active });
@@ -91,6 +248,7 @@ export function Admin() {
 
   async function toggleRole(p: PlayerResponse) {
     const newRole = p.role === "admin" ? "viewer" : "admin";
+    if (!confirm(`Alterar ${p.nickname} para ${newRole}?`)) return;
     try {
       await playersApi.update(p.id, { role: newRole });
       loadPlayers();
@@ -109,12 +267,6 @@ export function Admin() {
 
   const totalPages = Math.ceil(matchTotal / 15);
 
-  const inputStyle: React.CSSProperties = {
-    background: "#080c11", border: "1px solid #212d3a",
-    color: "#e3ebf3", fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-    padding: "9px 12px", outline: "none", boxSizing: "border-box", width: "100%",
-  };
-
   const TAB_STYLES = (active: boolean): React.CSSProperties => ({
     background: "none", border: "none", cursor: "pointer",
     fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
@@ -129,7 +281,7 @@ export function Admin() {
       {/* Scanlines */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.35 }} />
 
-      {/* Header mínimo */}
+      {/* Header */}
       <header style={{ borderBottom: "1px solid #1b2530", background: "linear-gradient(180deg,#0d1218,#070a0e)", padding: "22px 48px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 18 }}>
           <div style={{ width: 38, height: 38, border: "2px solid #0e7490", display: "flex", alignItems: "center", justifyContent: "center", background: "#04222b" }}>
@@ -150,10 +302,26 @@ export function Admin() {
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 48px 0", position: "relative", zIndex: 10 }}>
 
-        {/* Título */}
+        {/* Título + botão */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
           <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>GESTÃO</span>
           <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+          {tab === "players" && (
+            <button
+              onClick={() => setShowModal(true)}
+              style={{ background: "#0e7490", border: "none", color: "#fff", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "2px", padding: "8px 20px", cursor: "pointer" }}
+            >
+              + NOVO PLAYER
+            </button>
+          )}
+          {tab === "matches" && (
+            <button
+              onClick={() => navigate("/matches/new")}
+              style={{ background: "#0e7490", border: "none", color: "#fff", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "2px", padding: "8px 20px", cursor: "pointer" }}
+            >
+              + NOVA PARTIDA
+            </button>
+          )}
         </div>
 
         {/* Abas */}
@@ -164,159 +332,121 @@ export function Admin() {
 
         {/* ── ABA PLAYERS ─────────────────────────────────────────────────── */}
         {tab === "players" && (
-          <>
-            {/* Formulário criar player */}
-            <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "22px 26px", marginBottom: 24, position: "relative" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#0e7490,#6366f1)" }} />
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17, letterSpacing: "2px", color: "#e3ebf3", marginBottom: 16 }}>
-                NOVO PLAYER
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr 2fr", gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 5 }}>NICKNAME *</label>
-                  <input value={newNick} onChange={e => setNewNick(e.target.value)} placeholder="GodBR" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 5 }}>SENHA</label>
-                  <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder="deixar em branco = Steam only" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 5 }}>ROLE</label>
-                  <select value={newRole} onChange={e => setNewRole(e.target.value)} style={{ ...inputStyle }}>
-                    <option value="viewer">viewer</option>
-                    <option value="admin">admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 5 }}>STEAM ID (opcional)</label>
-                  <input value={newSteamId} onChange={e => setNewSteamId(e.target.value)} placeholder="76561198xxxxxxxxx" style={inputStyle} />
-                </div>
-              </div>
-              {createMsg && (
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: createError ? "#f87171" : "#34d399", marginBottom: 10 }}>
-                  // {createMsg}
-                </div>
-              )}
-              <button
-                onClick={handleCreatePlayer}
-                disabled={creating}
-                style={{ background: creating ? "#0a5567" : "#0e7490", border: "none", color: "#fff", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: 2, padding: "10px 24px", cursor: creating ? "wait" : "pointer" }}
-              >
-                {creating ? "CRIANDO..." : "CRIAR PLAYER"}
-              </button>
-            </div>
-
-            {/* Lista de players */}
-            {loadingPlayers ? (
-              <div style={{ textAlign: "center", padding: 40, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>carregando...</div>
-            ) : (
-              <div style={{ border: "1px solid #172029", background: "#0a0e13" }}>
-                {/* Header da tabela */}
-                <div style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 160px", gap: 0, borderBottom: "1px solid #172029", padding: "10px 18px" }}>
-                  {["ID", "NICKNAME", "ROLE", "STEAM", "STATUS", "AÇÕES"].map(h => (
-                    <span key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868" }}>{h}</span>
-                  ))}
-                </div>
-                {players.map(p => (
-                  <div key={p.id} style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 160px", gap: 0, alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #11171f", opacity: p.is_active ? 1 : 0.5 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#3a4757" }}>#{p.id}</span>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, color: "#e3ebf3" }}>{p.nickname}</span>
-                    <span style={{
-                      fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "1px",
-                      color: p.role === "admin" ? "#22d3ee" : "#566476",
-                    }}>{p.role}</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, color: p.steam_id ? "#34d399" : "#3a4757" }}>
-                      {p.steam_id ? "VINCULADO" : "—"}
-                    </span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: p.is_active ? "#34d399" : "#f87171" }}>
-                      {p.is_active ? "ATIVO" : "INATIVO"}
-                    </span>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => toggleActive(p)}
-                        style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 10px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: p.is_active ? "#1a0d0d" : "#0a1a0a", border: `1px solid ${p.is_active ? "#5a1010" : "#1a4a1a"}`, color: p.is_active ? "#f87171" : "#34d399" }}
-                      >
-                        {p.is_active ? "DESATIVAR" : "ATIVAR"}
-                      </button>
-                      <button
-                        onClick={() => toggleRole(p)}
-                        style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 10px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: "rgba(99,102,241,.08)", border: "1px solid rgba(99,102,241,.25)", color: "#818cf8" }}
-                      >
-                        {p.role === "admin" ? "→ VIEWER" : "→ ADMIN"}
-                      </button>
-                    </div>
-                  </div>
+          loadingPlayers ? (
+            <div style={{ textAlign: "center", padding: 60, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>carregando...</div>
+          ) : (
+            <div style={{ border: "1px solid #172029", background: "#0a0e13" }}>
+              {/* Header da tabela */}
+              <div style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 180px", borderBottom: "1px solid #172029", padding: "10px 18px" }}>
+                {["ID", "NICKNAME", "ROLE", "STEAM", "STATUS", "AÇÕES"].map(h => (
+                  <span key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868" }}>{h}</span>
                 ))}
               </div>
-            )}
-          </>
+              {players.length === 0 && (
+                <div style={{ padding: 40, textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#2a3a4a" }}>
+                  // nenhum player encontrado
+                </div>
+              )}
+              {players.map(p => (
+                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "50px 1fr 100px 120px 100px 180px", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #11171f", opacity: p.is_active ? 1 : 0.45 }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#3a4757" }}>#{p.id}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 28, height: 28, border: "1px solid #1e2a36", background: "#0d1218", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, color: "#566476", flexShrink: 0 }}>
+                      {p.avatar_initials}
+                    </div>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17, color: "#e3ebf3" }}>{p.nickname}</span>
+                  </div>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "1px", color: p.role === "admin" ? "#22d3ee" : "#566476" }}>
+                    {p.role}
+                  </span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, color: p.steam_id ? "#34d399" : "#3a4757" }}>
+                    {p.steam_id ? "VINCULADO" : "—"}
+                  </span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: p.is_active ? "#34d399" : "#f87171" }}>
+                    {p.is_active ? "ATIVO" : "INATIVO"}
+                  </span>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={() => toggleActive(p)}
+                      style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 8px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: p.is_active ? "#1a0d0d" : "#0a1a0a", border: `1px solid ${p.is_active ? "#5a1010" : "#1a4a1a"}`, color: p.is_active ? "#f87171" : "#34d399" }}
+                    >
+                      {p.is_active ? "DESATIVAR" : "ATIVAR"}
+                    </button>
+                    <button
+                      onClick={() => toggleRole(p)}
+                      style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 8px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: "rgba(99,102,241,.08)", border: "1px solid rgba(99,102,241,.25)", color: "#818cf8" }}
+                    >
+                      {p.role === "admin" ? "→ VIEW" : "→ ADM"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
 
         {/* ── ABA PARTIDAS ────────────────────────────────────────────────── */}
         {tab === "matches" && (
-          <>
-            {/* Botão nova partida */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-              <button
-                onClick={() => navigate("/matches/new")}
-                style={{ background: "#0e7490", border: "none", color: "#fff", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: 2, padding: "10px 22px", cursor: "pointer" }}
-              >
-                + NOVA PARTIDA
-              </button>
-            </div>
-
-            {loadingMatches ? (
-              <div style={{ textAlign: "center", padding: 40, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>carregando...</div>
-            ) : (
-              <>
-                <div style={{ border: "1px solid #172029", background: "#0a0e13" }}>
-                  {/* Header */}
-                  <div style={{ display: "grid", gridTemplateColumns: "60px 130px 160px 1fr 100px", gap: 0, borderBottom: "1px solid #172029", padding: "10px 18px" }}>
-                    {["ID", "DATA", "MAPA", "SCOPE", "AÇÃO"].map(h => (
-                      <span key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868" }}>{h}</span>
-                    ))}
-                  </div>
-                  {matches.map(m => (
-                    <div key={m.id} style={{ display: "grid", gridTemplateColumns: "60px 130px 160px 1fr 100px", gap: 0, alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #11171f" }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#3a4757" }}>#{m.id}</span>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#aebccd" }}>
-                        {new Date(m.played_at).toLocaleDateString("pt-BR")}
-                      </span>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: "#e3ebf3" }}>
-                        {m.map_name ?? "—"}
-                      </span>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#566476", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {m.scope_url ?? "sem link"}
-                      </span>
-                      <button
-                        onClick={() => handleDeleteMatch(m.id)}
-                        style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 10px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: "#1a0d0d", border: "1px solid #5a1010", color: "#f87171" }}
-                      >
-                        APAGAR
-                      </button>
-                    </div>
+          loadingMatches ? (
+            <div style={{ textAlign: "center", padding: 60, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>carregando...</div>
+          ) : (
+            <>
+              <div style={{ border: "1px solid #172029", background: "#0a0e13" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "60px 130px 160px 1fr 100px", borderBottom: "1px solid #172029", padding: "10px 18px" }}>
+                  {["ID", "DATA", "MAPA", "SCOPE", "AÇÃO"].map(h => (
+                    <span key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868" }}>{h}</span>
                   ))}
                 </div>
-
-                {/* Paginação */}
-                {totalPages > 1 && (
-                  <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setMatchPage(p)}
-                        style={{ width: 34, height: 34, border: `1px solid ${p === matchPage ? "#0e7490" : "#1e2a36"}`, background: p === matchPage ? "rgba(14,116,144,.15)" : "#0d1218", color: p === matchPage ? "#22d3ee" : "#566476", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
+                {matches.length === 0 && (
+                  <div style={{ padding: 40, textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#2a3a4a" }}>// nenhuma partida encontrada</div>
                 )}
-              </>
-            )}
-          </>
+                {matches.map(m => (
+                  <div key={m.id} style={{ display: "grid", gridTemplateColumns: "60px 130px 160px 1fr 100px", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #11171f" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#3a4757" }}>#{m.id}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#aebccd" }}>
+                      {new Date(m.played_at).toLocaleDateString("pt-BR")}
+                    </span>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: "#e3ebf3" }}>
+                      {m.map_name ?? "—"}
+                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#566476", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {m.scope_url ?? "sem link"}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteMatch(m.id)}
+                      style={{ fontSize: 10, letterSpacing: "1px", padding: "5px 10px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", background: "#1a0d0d", border: "1px solid #5a1010", color: "#f87171" }}
+                    >
+                      APAGAR
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setMatchPage(p)}
+                      style={{ width: 34, height: 34, border: `1px solid ${p === matchPage ? "#0e7490" : "#1e2a36"}`, background: p === matchPage ? "rgba(14,116,144,.15)" : "#0d1218", color: p === matchPage ? "#22d3ee" : "#566476", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )
         )}
       </main>
+
+      {/* Modal de cadastro */}
+      {showModal && (
+        <CreatePlayerModal
+          onClose={() => setShowModal(false)}
+          onSuccess={loadPlayers}
+        />
+      )}
     </div>
   );
 }

@@ -17,7 +17,10 @@ export function Navbar() {
     { label: "RANKING",    path: "/" },
     { label: "MEU PERFIL", path: "/profile" },
     { label: "CHAT",       path: "/chat" },
-    ...(isAdmin ? [{ label: "GESTÃO", path: "/admin" }] : []),
+    ...(isAdmin ? [
+      { label: "GESTÃO",  path: "/admin" },
+      { label: "DEMO",    path: "/demo"  },
+    ] : []),
   ];
 
   function isActive(path: string) {

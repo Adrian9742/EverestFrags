@@ -23,6 +23,9 @@ export default defineConfig({
         target: 'http://localhost:8001',
         changeOrigin: true,
         // sem rewrite — /api/ranking vai para http://localhost:8001/api/ranking
+        // timeout estendido para uploads grandes (.dem até 750MB)
+        proxyTimeout: 300_000,
+        timeout: 300_000,
       },
     },
   },

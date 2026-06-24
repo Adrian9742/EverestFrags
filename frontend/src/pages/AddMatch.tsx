@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { playersApi, matchesApi, type PlayerResponse, type PlayerStatsCreate } from "../api/client";
 
 const MAPS = ["de_dust2", "de_mirage", "de_inferno", "de_nuke", "de_ancient", "de_anubis", "de_vertigo"];
@@ -35,6 +35,9 @@ const STAT_COLS: { key: keyof PlayerStatsCreate; label: string; min: number; max
 
 export function AddMatch() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromDemo = searchParams.get("from") === "demo";
+
   const [players, setPlayers] = useState<PlayerResponse[]>([]);
   const [rows, setRows] = useState<StatRow[]>([]);
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().slice(0, 10));
@@ -43,10 +46,71 @@ export function AddMatch() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [demoUnmatched, setDemoUnmatched] = useState<string[]>([]);
 
   useEffect(() => {
     playersApi.list().then(ps => {
       setPlayers(ps);
+
+      // Tenta pré-preencher com dados do demo se vier de /demo
+      if (fromDemo) {
+        try {
+          const raw = sessionStorage.getItem("demo_result");
+          if (raw) {
+            const demo = JSON.parse(raw);
+            if (demo.map_name) setMapName(demo.map_name);
+            sessionStorage.removeItem("demo_result");
+
+            const unmatched: string[] = [];
+            const demoByNick: Record<string, any> = {};
+            for (const dp of (demo.players ?? [])) {
+              demoByNick[dp.nickname.toLowerCase()] = dp;
+            }
+
+            const newRows: StatRow[] = ps.map(p => {
+              const match = demoByNick[p.nickname.toLowerCase()];
+              if (match) {
+                return {
+                  player_id: p.id, selected: true,
+                  kills: match.kills ?? 0,
+                  deaths: match.deaths ?? 0,
+                  assists: match.assists ?? 0,
+                  damage_total: match.damage_total ?? 0,
+                  adr: match.adr ?? 0,
+                  adr_difference: match.adr_difference ?? 0,
+                  hltv_rating: match.hltv_rating ?? 0,
+                  kast_percent: match.kast_percent ?? 0,
+                  opening_kills: match.opening_kills ?? 0,
+                  trade_kills: match.trade_kills ?? 0,
+                  time_to_kill_ms: match.time_to_kill_ms ?? 0,
+                  flash_assists: match.flash_assists ?? 0,
+                  grenade_damage: match.grenade_damage ?? 0,
+                  he_enemies_hit: match.he_enemies_hit ?? 0,
+                  fire_enemies_hit: match.fire_enemies_hit ?? 0,
+                };
+              }
+              return {
+                player_id: p.id, selected: false,
+                kills: 0, deaths: 0, assists: 0, damage_total: 0,
+                adr: 0, adr_difference: 0, hltv_rating: 0, kast_percent: 0,
+                opening_kills: 0, trade_kills: 0, time_to_kill_ms: 0,
+                flash_assists: 0, grenade_damage: 0, he_enemies_hit: 0, fire_enemies_hit: 0,
+              };
+            });
+
+            // detecta nicks do demo que não casaram com nenhum player
+            const dbNicks = new Set(ps.map(p => p.nickname.toLowerCase()));
+            for (const nick of Object.keys(demoByNick)) {
+              if (!dbNicks.has(nick)) unmatched.push(nick);
+            }
+
+            setRows(newRows);
+            setDemoUnmatched(unmatched);
+            return;
+          }
+        } catch {}
+      }
+
       setRows(ps.map(p => ({
         player_id: p.id,
         selected: false,
@@ -125,6 +189,18 @@ export function AddMatch() {
             </button>
           </div>
         </div>
+
+        {/* Banner demo */}
+        {fromDemo && (
+          <div style={{ background: "rgba(14,116,144,0.07)", border: "1px solid rgba(14,116,144,0.25)", padding: "10px 16px", marginBottom: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#22d3ee" }}>
+            // dados pré-preenchidos a partir do demo
+            {demoUnmatched.length > 0 && (
+              <span style={{ color: "#e0a82e", marginLeft: 16 }}>
+                ⚠ nicks não encontrados no sistema: {demoUnmatched.join(", ")}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Metadados */}
         <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>

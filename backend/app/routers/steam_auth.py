@@ -14,7 +14,7 @@ Variáveis de ambiente necessárias:
 
 import os
 import json
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -60,30 +60,41 @@ async def steam_callback(request: Request, db: Session = Depends(get_db)):
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
     steam_api_key = os.getenv("STEAM_API_KEY", "")
 
-    params = dict(request.query_params)
-    steam_id = await verify_steam_response(params)
+    try:
+        # parse manual para preservar '+' literais da assinatura base64 do Steam
+        # (request.query_params usa parse_qsl que converte '+' em espaço, corrompendo o sig)
+        raw_query = str(request.url.query)
+        params = {}
+        for pair in raw_query.split("&"):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                params[unquote(k)] = unquote(v)
 
-    if not steam_id:
+        steam_id = await verify_steam_response(params)
+
+        if not steam_id:
+            return RedirectResponse(f"{frontend_url}/login?error=steam_auth_failed")
+
+        # Busca perfil na Steam API (nickname, avatar)
+        profile = await get_steam_profile(steam_id, steam_api_key)
+
+        # Cria ou atualiza o player no banco
+        player = get_or_create_by_steam(db, steam_id, profile)
+
+        # Gera JWT com o ID do player
+        token = create_access_token({"sub": str(player.id)})
+
+        # Serializa dados do player para a query string (URL-encoded JSON)
+        player_data = {
+            "id": player.id,
+            "nickname": player.nickname,
+            "role": player.role,
+            "avatar_initials": player.avatar_initials,
+        }
+        player_encoded = quote(json.dumps(player_data))
+
+        return RedirectResponse(
+            f"{frontend_url}/auth/callback?token={token}&player={player_encoded}"
+        )
+    except Exception as e:
         return RedirectResponse(f"{frontend_url}/login?error=steam_auth_failed")
-
-    # Busca perfil na Steam API (nickname, avatar)
-    profile = await get_steam_profile(steam_id, steam_api_key)
-
-    # Cria ou atualiza o player no banco
-    player = get_or_create_by_steam(db, steam_id, profile)
-
-    # Gera JWT com o ID do player
-    token = create_access_token({"sub": str(player.id)})
-
-    # Serializa dados do player para a query string (URL-encoded JSON)
-    player_data = {
-        "id": player.id,
-        "nickname": player.nickname,
-        "role": player.role,
-        "avatar_initials": player.avatar_initials,
-    }
-    player_encoded = quote(json.dumps(player_data))
-
-    return RedirectResponse(
-        f"{frontend_url}/auth/callback?token={token}&player={player_encoded}"
-    )

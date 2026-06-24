@@ -27,6 +27,7 @@ import { Sort } from "./pages/Sort";
 import { Profile } from "./pages/Profile";
 import { Admin } from "./pages/Admin";
 import { Chat } from "./pages/Chat";
+import { DemoUpload } from "./pages/DemoUpload";
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/sort" element={<Sort />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="/demo" element={<AdminRoute><DemoUpload /></AdminRoute>} />
           <Route path="/chat" element={<Chat />} />
           {/* Rota curinga — redireciona para o dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
