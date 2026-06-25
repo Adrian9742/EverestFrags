@@ -719,5 +719,14 @@ continha código Python correto nas primeiras linhas mas tinha conteúdo do `SET
 copiado junto — terminava em ` ``` ` e resto do markdown, tornando o arquivo Python inválido.
 Como `main.py` importa de `app.database`, o arquivo raiz não afetava o runtime, mas gerava
 confusão e erros se importado diretamente.
-**Fix:** arquivo raiz limpado para conter só o Python válido com a validação mais estrita
-(`raise RuntimeError` se `DATABASE_URL` não estiver definida).
+**Fix:** arquivo raiz deletado — nada no projeto importa `backend.database`, só `app.database`.
+Mantê-lo (mesmo limpo) criaria uma cópia duplicada do engine/SessionLocal real, convidando
+alguém a editar o arquivo errado no futuro.
+
+### Bug 16 — `demoparser2==0.9.0` em `requirements.txt` (versão inexistente)
+Pin colocado no `requirements.txt` apontava para uma versão que **não existe no PyPI**
+(o índice vai de `0.15.2` a `0.41.3`). `pip install -r requirements.txt` falharia direto
+numa instalação limpa (deploy no Render, ou qualquer clone novo do repo) — quebraria
+silenciosamente até alguém tentar rodar o backend do zero.
+**Fix:** corrigido para `demoparser2==0.41.3`, a versão de fato instalada e testada
+(inclusive contra demos reais, com extração de `steamid` e `weapon` funcionando).
