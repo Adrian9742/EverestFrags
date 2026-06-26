@@ -147,20 +147,28 @@ def get_ranking(db: Session) -> List[RankingEntry]:
             - aggregated["advantage_kills"] * 0.2,
             0.0,
         )
+        # Taxa por partida — neutraliza viés de volume: jogador com 10 partidas
+        # não pontua mais que um com 3 só por ter acumulado mais eventos.
+        # Soma metrics viram "por partida"; média metrics já são naturalmente neutras.
+        mc = max(aggregated["match_count"], 1)
+        aggregated["score_rate"] = {m: aggregated[m] / mc for m in SOMA_METRICS}
+        aggregated["score_rate"]["weighted_kills"] = aggregated["weighted_kills"] / mc
+        for m in MEDIA_METRICS:
+            aggregated["score_rate"][m] = aggregated[m]
         players_data.append(aggregated)
 
     # Passo 2 — normaliza cada métrica
     all_metrics = SOMA_METRICS + MEDIA_METRICS + ["weighted_kills"]
     min_max: Dict[str, tuple] = {}
     for m in all_metrics:
-        vals = [p[m] for p in players_data]
+        vals = [p["score_rate"][m] for p in players_data]
         min_max[m] = (min(vals), max(vals))
 
     for p in players_data:
         p["normalized"] = {}
         for m in all_metrics:
             mn, mx = min_max[m]
-            p["normalized"][m] = _normalize(p[m], mn, mx, inverted=(m in INVERTED_METRICS))
+            p["normalized"][m] = _normalize(p["score_rate"][m], mn, mx, inverted=(m in INVERTED_METRICS))
 
     # Passo 3 — calcula scores
     for p in players_data:

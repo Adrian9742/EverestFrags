@@ -20,6 +20,7 @@ import tempfile
 from typing import Any
 
 TRADE_WINDOW_TICKS = 5 * 128   # 5 segundos a 128 tick
+FLASH_WINDOW_TICKS = 3 * 128   # 3 segundos — janela para flash assist
 ECO_THRESHOLD      = 1000       # equipamento < $1000 = eco round
 
 
@@ -80,7 +81,11 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
             errors.append(f"Eventos de round indisponíveis: {e}")
 
         try:
-            flash_df = parser.parse_event("player_blind", player=["team_num", "steamid"])
+            flash_df = parser.parse_event(
+                "player_blind",
+                player=["team_num", "steamid"],
+                other=["attacker_steamid", "attacker_name"],
+            )
         except Exception as e:
             errors.append(f"Eventos de flash indisponíveis: {e}")
 
@@ -156,14 +161,25 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
     max_kill_round = max((k["round"] for k in kills if k["round"] is not None and k["round"] >= 0), default=-1)
     total_rounds = max(total_rounds, max_kill_round + 1)
 
-    flash_by_attacker: dict[str, int] = {}
+    # Constrói lista de cegadas para cruzar com kills depois.
+    # flash_by_attacker é calculado APÓS o loop de kills, quando a lista kills está completa.
+    flash_events: list[dict] = []
     if flash_df is not None and not flash_df.empty:
-        cols = flash_df.columns if hasattr(flash_df, "columns") else []
-        if "attacker_name" in cols:
-            for row in flash_df.to_dicts() if hasattr(flash_df, "to_dicts") else flash_df.to_dict("records"):
-                atk = _key(_s(row.get("attacker_steamid")), _s(row.get("attacker_name")))
-                if atk:
-                    flash_by_attacker[atk] = flash_by_attacker.get(atk, 0) + 1
+        for row in flash_df.to_dicts() if hasattr(flash_df, "to_dicts") else flash_df.to_dict("records"):
+            atk_sid  = _s(row.get("attacker_steamid"))
+            atk_name = _s(row.get("attacker_name"))
+            atk      = _key(atk_sid, atk_name) if (atk_sid or atk_name) else None
+            vic_sid  = _s(row.get("user_X_steamid") or row.get("user_steamid") or "")
+            vic_name = _s(row.get("user_name") or "")
+            vic      = _key(vic_sid, vic_name) if (vic_sid or vic_name) else None
+            atk_team = row.get("attacker_X_team_num") or row.get("attacker_team_num")
+            vic_team = row.get("user_X_team_num") or row.get("user_team_num")
+            tick     = row.get("tick") or 0
+            if atk and vic and atk_team is not None and vic_team is not None:
+                flash_events.append({
+                    "tick": tick, "attacker": atk, "victim": vic,
+                    "attacker_team": atk_team, "victim_team": vic_team,
+                })
     del flash_df
 
     # Gasto por round (steamid -> valor comprado naquele round) — usado pra eco_kills.
@@ -282,7 +298,19 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
             if r not in died_rounds.get(player, set()):
                 kast_rounds.setdefault(player, set()).add(r)
 
-    del kills, recent_kills, seen_opening_rounds, died_rounds, alive
+    # Flash assists reais: cegou inimigo que foi morto por aliado dentro de FLASH_WINDOW_TICKS.
+    # Requer a lista kills completa — calculado aqui, antes do del kills.
+    flash_by_attacker: dict[str, int] = {}
+    for blind in flash_events:
+        if blind["attacker_team"] == blind["victim_team"]:
+            continue  # team flash — não conta
+        for k in kills:
+            if (k["victim"] == blind["victim"] and
+                    k["atk_team"] == blind["attacker_team"] and
+                    0 <= k["tick"] - blind["tick"] <= FLASH_WINDOW_TICKS):
+                flash_by_attacker[blind["attacker"]] = flash_by_attacker.get(blind["attacker"], 0) + 1
+                break
+    del flash_events, kills, recent_kills, seen_opening_rounds, died_rounds, alive
 
     # Dano / ADR / Weapon stats
     dmg_totals: dict[str, int] = {}
