@@ -362,19 +362,20 @@ elif alive[atk_team] > alive[vic_team]:
 
 ### eco_kills — kill contra inimigo mal equipado
 
-Soma o `cost` de cada `item_purchase` por `(round, steamid)` em `round_spend`. No momento
-da kill, se o gasto da vítima naquele round for `< ECO_THRESHOLD` (US$ 1000), conta como
-eco kill:
+Soma o `cost` de cada `item_purchase` por `(round, steamid)` em `round_spend`. Antes do
+loop de kills, propaga equipamento carregado entre rounds via `effective_spend`: jogadores
+que sobreviveram mantêm o gasto efetivo do round anterior como base para o próximo;
+quem morreu começa do zero. A tabela `effective_spend[rnd][player]` combina compras novas
+e equipamento carregado via `max(buys.get(p, 0), carried.get(p, 0))`. No momento da kill:
 
 ```python
-vic_spend = round_spend.get(rnd, {}).get(vic, 0)
+vic_spend = effective_spend.get(rnd, {}).get(vic, 0)
 if vic_spend < ECO_THRESHOLD:
     eco_kills += 1
 ```
 
-⚠️ Aproximação documentada: só conta compras NOVAS naquele round, não reflete equipamento
-carregado de rounds anteriores (ex: AWP comprada e mantida sem nova compra) — não é o
-valor exato do loadout no momento da kill, mas funciona bem o suficiente pro caso de uso.
+Assim AWPs e rifles carregados sem nova compra são contabilizados corretamente. Ver Bug 21
+para o histórico da correção.
 
 ### kast_percent — Kill/Assist/Survived/Traded
 
@@ -551,14 +552,14 @@ Após o login, o comportamento é idêntico independente do método — ambos us
 
 | Token | Valor | Uso |
 |-------|-------|-----|
-| `#080808` | Fundo principal | Fundo de todas as páginas |
-| `#cc2200` | Vermelho (primário) | CTAs, 1º lugar, acento principal |
-| `#7c3aed` | Roxo (secundário) | 2º lugar, duelos |
-| `#e0a82e` | Dourado | 3º lugar, utility |
-| `#0d0d0d` | Card bg | Fundo dos cards |
-| `#1c1c1c` | Borda | Bordas e divisores |
-| `#f4f4f4` | Texto principal | Títulos e nomes |
-| `#9a9a9a` | Texto secundário | Labels e subtítulos |
+| `#070a0e` | Fundo principal | Fundo de todas as páginas |
+| `#0e7490` | Teal (primário) | CTAs, acento principal, links |
+| `#6366f1` | Indigo (secundário) | 2º lugar, duelos |
+| `#e0a82e` | Dourado | 3º lugar, utility, avisos |
+| `#0d1218` | Card bg | Fundo de cards e headers |
+| `#1b2530` | Borda | Bordas e divisores |
+| `#f0f9ff` | Texto principal | Títulos e nomes |
+| `#5d6d80` | Texto secundário | Labels e subtítulos |
 | Barlow Condensed | Display | Títulos, scores, nomes de jogadores |
 | Inter | Corpo | Labels, textos corridos |
 | JetBrains Mono | Dados | Números, stats, código |
@@ -649,6 +650,31 @@ players / player123
 | `/admin` | admin | Gestão de players e partidas |
 | `/chat` | público | Chat em tempo real (WebSocket) |
 | `/*` | — | Redireciona para `/` |
+
+---
+
+## Workflow Git
+
+```
+main  ← branch de produção — só recebe merges de dev
+dev   ← branch de staging — valida antes de ir pra main
+feature/xxx ← branch de trabalho — criada a partir de dev
+```
+
+**Fluxo padrão:**
+1. `git checkout dev && git pull`
+2. `git checkout -b feature/nome-da-feature`
+3. Trabalha, commits normais
+4. PR: feature → dev (para revisão/teste)
+5. Depois validado em dev: PR dev → main
+
+**Contas GitHub:**
+- `Adrian9742` — dono do repo, tem permissão de merge
+- `tirealmetais-dotcom` — colaborador, pode abrir PRs mas não mergear
+
+**Nota:** o GitHub pode traduzir nomes de branch no browser (ex: `main` → `principal`,
+`dev` → `desenvolvedor`). É a extensão de tradução automática do browser — desative-a
+em github.com para evitar confusão.
 
 ---
 
@@ -824,3 +850,38 @@ mensagem real. Mascarava completamente a causa de qualquer erro de validação (
 Bug 19 acima). **Fix:** nova função `formatErrorDetail()` em `client.ts` que trata `detail`
 como string OU array (formatando cada item como `campo: mensagem`, separados por `·`),
 usada nos dois pontos que liam `error.detail` (`request()` genérico e `demoApi.parse()`).
+
+### Bug 21 — `eco_kills` ignorava equipamento carregado de rounds anteriores
+`demo_service.py` calculava `eco_kills` consultando só o gasto registrado em `round_spend`
+para aquele round específico — players que sobreviveram com armas compradas em rounds
+anteriores (AWP carregada, rifles, etc.) e não fizeram nenhuma compra nova tinham gasto
+registrado como 0, fazendo qualquer kill contra eles contar como eco kill mesmo que o inimigo
+estivesse full-buy. Resultado: `eco_kills` inflado artificialmente, penalizando o score
+Combate de jogadores que matavam players ricos em rounds de carryover.
+**Fix (Opção B — effective_spend):** antes do loop de kills, construído `effective_spend`
+propagando `carried` dict entre rounds — sobreviventes mantêm o gasto efetivo máximo do
+round anterior como base para o próximo round; mortos têm `carried` zerado. A consulta
+muda de `round_spend.get(rnd, {}).get(vic, 0)` para `effective_spend.get(rnd, {}).get(vic, 0)`.
+Sem precisar de `parse_ticks()` nem `equipment_value` (campo ausente no demoparser2 nos
+eventos `player_death`). Ver "Métricas Situacionais → eco_kills" para a lógica atual.
+
+### Bug 22 — RadarChart eixo `trade` era `score_duel` (mesmo eixo repetido)
+`PodiumCard.tsx` e `PlayerDetailModal.tsx` passavam `trade={entry.score_duel}` para o
+`RadarChart` — o mesmo valor do eixo "Duelos", tornando os dois eixos sempre idênticos e
+o hexágono visualmente redundante.
+`RankingEntry` não tem campos `score_entry`/`score_clutch`/`score_support` (nunca foram
+implementados), então não havia candidato óbvio pro 6º eixo.
+**Fix:** `trade={Math.min(entry.kd_ratio * 33, 100)}` — K/D ratio mapeado para 0–100
+(`kd_ratio × 33`, cap 100): 0.5→16, 1.0→33, 2.0→66, 3.0→99. É semanticamente distinto
+de `score_duel` (que é sobre abertura de rounds e trades) e não exige mudança no backend.
+Comentário atualizado em `RadarChart.tsx`: `// k/d normalizado: kd_ratio × 33 cap 100`.
+
+### Bug 23 — Paleta antiga (#080808/#cc2200) usada em 4 arquivos após rebrand
+Após o rebrand para paleta v2 (teal/indigo), os arquivos `Matches.tsx`, `MatchDetail.tsx`,
+`AddMatch.tsx` e `SteamCallback.tsx` ainda usavam `background: "#080808"` (fundo) e
+`#cc2200` (acento vermelho) em múltiplos lugares. Botões de CTA, links scope.gg, paginação
+ativa, spinner e barra de acento do card de partida apareciam na cor errada.
+Além disso, as 3 primeiras páginas não tinham `<Navbar />` — a navegação sumia ao entrar
+nessas rotas. **Fix:** paleta migrada para `#070a0e`/`#0e7490` em todos os 4 arquivos;
+`Navbar` importada e adicionada em Matches, MatchDetail e AddMatch; botões "← voltar"
+removidos (redundantes com a Navbar). CLAUDE.md atualizado para refletir a paleta correta.

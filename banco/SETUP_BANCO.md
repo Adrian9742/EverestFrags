@@ -12,9 +12,10 @@ Guia passo a passo para criar e popular o banco PostgreSQL do projeto do zero.
 | SQLAlchemy | 2.0.30 (ORM declarativo com `Mapped`) |
 | psycopg2 | 2.9.9 (driver de conexão) |
 | python-dotenv | 1.0.1 (leitura do `.env`) |
-| Alembic | 1.13.1 (instalado, ainda não utilizado — migrações futuras) |
+| Alembic | 1.13.1 (configurado e em uso — migrações incrementais) |
 
-Sem Alembic ativo por enquanto: as tabelas são criadas via `Base.metadata.create_all()` no startup do FastAPI e no `seed.py`.
+As tabelas são criadas via `Base.metadata.create_all()` no startup do FastAPI e no `seed.py`.
+Mudanças de schema passam por Alembic: `alembic revision --autogenerate -m "..."` → revisar → `alembic upgrade head`.
 
 ---
 
@@ -130,22 +131,29 @@ python seed.py
 
 O `seed.py` executa em ordem:
 
-1. `Base.metadata.create_all(bind=engine)` — cria as 4 tabelas se não existirem
+1. `Base.metadata.create_all(bind=engine)` — cria as tabelas se não existirem
 2. Insere o admin (trocar senha após o primeiro login)
-3. Insere a config de pesos padrão (50% combate / 30% duelos / 20% utility)
-4. Insere os 13 jogadores reais do grupo com seus Steam IDs
+3. Insere os 13 jogadores reais do grupo com seus Steam IDs
 
 **Saída esperada:**
 
 ```
 + Admin criado -- TROQUE A SENHA!
-+ Ranking config criada (50/30/20)
 + 13 players criados, 0 ja existiam
 
 == Seed concluido! ==
 ```
 
 Rodar o `seed.py` duas vezes é seguro — ele verifica existência antes de inserir.
+
+**Após o seed, marcar Alembic como sincronizado:**
+
+```powershell
+alembic stamp head
+```
+
+Isso registra que o banco já está na baseline atual (sem rodar nenhum DDL).
+Sem esse passo, o Alembic pode tentar aplicar migrações que o banco já tem.
 
 ---
 
@@ -158,16 +166,12 @@ psql -U postgres -d everestfrags
 ```sql
 -- Listar tabelas criadas
 \dt
--- Esperado: matches, player_match_stats, players, ranking_config
+-- Esperado: chat_messages, matches, player_match_stats, players
 
 -- Verificar admin e players
 SELECT id, nickname, role, steam_id, is_active FROM players ORDER BY id;
 
--- Verificar pesos do ranking
-SELECT * FROM ranking_config;
--- weight_combat=0.5000, weight_duel=0.3000, weight_utility=0.2000
-
--- Verificar estrutura de player_match_stats (incluindo trade_denials)
+-- Verificar estrutura de player_match_stats (incluindo colunas situacionais)
 \d player_match_stats
 
 \q
@@ -192,30 +196,31 @@ Se a página de docs abrir sem erros no terminal, o banco está conectado e as t
 ## Diagrama de relacionamentos
 
 ```
-players ──────────────────────────────────────────┐
-  id (PK)                                         │
-  nickname (UNIQUE)                               │
-  steam_id                                        │
-  avatar_initials                                 │
-  password_hash (nullable)                        │
-  role: 'admin' | 'viewer'                        │
-  is_active                                       │
-  created_at                                      │
-        │                                         │
-        │ 1:N                                     │ 1:N
-        ▼                                         ▼
-player_match_stats                          ranking_config
-  id (PK)                                     id (PK) ← sempre 1 linha
-  player_id → players (CASCADE DELETE)        weight_combat   0.50
-  match_id  → matches (CASCADE DELETE)        weight_duel     0.30
-  UNIQUE(player_id, match_id)                 weight_utility  0.20
-  kills, deaths, assists                      updated_at
-  damage_total, adr, adr_difference           updated_by → players (SET NULL)
+players ──────────────────────────────────────────────┐
+  id (PK)                                             │
+  nickname (UNIQUE)                                   │
+  steam_id                                            │
+  avatar_initials                                     │
+  password_hash (nullable)                            │
+  role: 'admin' | 'viewer'                            │
+  is_active                                           │
+  created_at                                          │
+        │                                             │ 1:N
+        │ 1:N                                         ▼
+        ▼                                       chat_messages
+player_match_stats                                id (PK)
+  id (PK)                                         player_id → players (SET NULL)
+  player_id → players (CASCADE DELETE)            nickname, avatar_initials  ← snapshot
+  match_id  → matches (CASCADE DELETE)            text
+  UNIQUE(player_id, match_id)                     created_at  (indexado)
+  kills, deaths, assists
+  damage_total, adr, adr_difference
   hltv_rating, kast_percent
   opening_kills, trade_kills, trade_denials
   time_to_kill_ms
   flash_assists, grenade_damage
   he_enemies_hit, fire_enemies_hit
+  disadvantage_kills, advantage_kills, eco_kills
         ▲
         │ N:1
         │
@@ -250,6 +255,9 @@ matches
 | `grenade_damage` | INTEGER | Utility |
 | `he_enemies_hit` | INTEGER | Utility |
 | `fire_enemies_hit` | INTEGER | Utility |
+| `disadvantage_kills` | INTEGER | Combate (bônus 1.3×) |
+| `advantage_kills` | INTEGER | Combate (penalidade 0.8×) |
+| `eco_kills` | INTEGER | Combate (penalidade 0.5×) |
 
 ---
 
@@ -259,29 +267,31 @@ matches
 |---------|-----------|--------|
 | `player_match_stats.player_id` → `players` | `CASCADE` | deletar player apaga todas as suas stats |
 | `player_match_stats.match_id` → `matches` | `CASCADE` | deletar partida apaga todas as stats da partida |
-| `ranking_config.updated_by` → `players` | `SET NULL` | deletar admin não apaga a config de pesos |
+| `chat_messages.player_id` → `players` | `SET NULL` | deletar player preserva as mensagens (player_id vira null) |
 
 ---
 
-## Migrações manuais (sem Alembic)
+## Migrações com Alembic
 
-Quando uma coluna é adicionada ao model mas o banco já existia (`create_all` não altera tabelas existentes):
+Quando uma coluna é adicionada ao model e o banco já existia (`create_all` não altera tabelas existentes):
 
 ```powershell
-psql -U postgres -d everestfrags
+cd backend
+alembic revision --autogenerate -m "descricao da mudanca"
+# Revisar o arquivo gerado em alembic/versions/
+alembic upgrade head
 ```
 
-```sql
--- Adicionado em 2026-06-25: trade_denials em player_match_stats
-ALTER TABLE player_match_stats
-  ADD COLUMN IF NOT EXISTS trade_denials INTEGER NOT NULL DEFAULT 0;
+Para ver o estado atual:
 
--- Verificar
-\d player_match_stats
-\q
+```powershell
+alembic current   # mostra a revisão aplicada no banco
+alembic history   # lista todas as revisões
 ```
 
-Alternativa: recriar o banco do zero (ver seção abaixo).
+A baseline `8c264163dd4b` foi gerada com diff vazio (schema já estava em sync) e aplicada
+via `alembic stamp head` — ela representa o schema completo atual incluindo `chat_messages`,
+`disadvantage_kills`, `advantage_kills`, `eco_kills` e `trade_denials`.
 
 ---
 
