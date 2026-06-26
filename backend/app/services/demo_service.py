@@ -196,6 +196,28 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
                 bucket[steamid] = bucket.get(steamid, 0) + int(cost)
     del purchase_df
 
+    # Effective spend por round — corrige viés de equipamento carregado entre rounds.
+    # round_spend só conta compras NOVAS do round; jogador que sobreviveu com AWP do
+    # round anterior aparecia como eco (spend=$0) por não ter comprado nada.
+    # OPÇÃO B: demoparser2 não expõe inventory_value via parse_event (exigiria
+    # parse_ticks, intencionalmente evitado). Estimamos propagando o gasto acumulado
+    # desde a última morte — sobreviventes carregam o effective_spend para o próximo round.
+    deaths_by_round: dict[int, set[str]] = {}
+    for k in kills:
+        if k["victim"]:
+            deaths_by_round.setdefault(k["round"], set()).add(k["victim"])
+
+    effective_spend: dict[int, dict[str, int]] = {}
+    carried: dict[str, int] = {}
+    max_rnd = max((k["round"] for k in kills if k["round"] is not None and k["round"] >= 0), default=0)
+    for rnd in range(max_rnd + 1):
+        buys = round_spend.get(rnd, {})
+        rnd_players = set(buys.keys()) | set(carried.keys())
+        effective_spend[rnd] = {p: max(buys.get(p, 0), carried.get(p, 0)) for p in rnd_players}
+        died_this = deaths_by_round.get(rnd, set())
+        carried = {p: v for p, v in effective_spend[rnd].items() if p not in died_this}
+    del deaths_by_round, carried
+
     # ── 5. Coleta identidades únicas ──────────────────────────────────────────
     player_keys: set[str] = set()
     for k in kills:
@@ -256,7 +278,7 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
             elif alive[atk_team] > alive[vic_team]:
                 stats[atk]["advantage_kills"] += 1
 
-            vic_spend = round_spend.get(rnd, {}).get(vic, 0)
+            vic_spend = effective_spend.get(rnd, {}).get(vic, 0)
             if vic_spend < ECO_THRESHOLD:
                 stats[atk]["eco_kills"] += 1
 
@@ -310,7 +332,7 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
                     0 <= k["tick"] - blind["tick"] <= FLASH_WINDOW_TICKS):
                 flash_by_attacker[blind["attacker"]] = flash_by_attacker.get(blind["attacker"], 0) + 1
                 break
-    del flash_events, kills, recent_kills, seen_opening_rounds, died_rounds, alive
+    del flash_events, kills, recent_kills, seen_opening_rounds, died_rounds, alive, round_spend, effective_spend
 
     # Dano / ADR / Weapon stats
     dmg_totals: dict[str, int] = {}
@@ -355,6 +377,11 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
         # nunca deveria passar de 100, mas protege contra qualquer edge case de contagem.
         kast = min(round(len(kast_rounds.get(player_key, set())) / total_rounds * 100, 1), 100.0) if total_rounds else 0.0
         s["kast_percent"] = kast
+        # ATENÇÃO: fórmula aproximada — HLTV Rating 2.0 oficial não é público.
+        # Baseada em engenharia reversa documentada publicamente.
+        # Resultados ficam próximos, mas podem divergir em condições extremas
+        # (poucos rounds, K/D muito alto/baixo, ADR fora do padrão).
+        # Ref: https://flashed.gg/posts/reverse-engineering-hltv-rating/
         s["hltv_rating"] = round(
             max(0.0073 * kast + 0.3591 * (k / total_rounds) - 0.5329 * (d / total_rounds)
                 + 0.2372 * (k / d - 1) + 0.0032 * adr + 0.1587, 0.0), 2

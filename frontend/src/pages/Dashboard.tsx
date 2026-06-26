@@ -137,9 +137,12 @@ export function Dashboard() {
         {!loading && ranking.length > 0 && (
           <>
             {/* Seção pódio */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "34px 0 22px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "34px 0 8px" }}>
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>PÓDIO</span>
               <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+            </div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#2e3e50", letterSpacing: "0.5px", marginBottom: 18 }}>
+              // score relativo ao grupo — atualiza a cada nova partida registrada
             </div>
             {/* 3 colunas com o centro levemente maior (1º lugar destacado) */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1.08fr 1fr", gap: 18, alignItems: "end" }}>

@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { playersApi, matchesApi, demoApi, type PlayerResponse, type PlayerStatsCreate, type DemoPlayerStat, type DemoCreatedPlayer } from "../api/client";
+import { Navbar } from "../components/Navbar";
 
 const MAPS = ["de_dust2", "de_mirage", "de_inferno", "de_nuke", "de_ancient", "de_anubis", "de_vertigo"];
 const MAX_DEMO_MB = 750;
@@ -194,16 +195,14 @@ export function AddMatch() {
   const demoSz = demoFile ? (demoFile.size / (1024 * 1024)).toFixed(1) : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080808", color: "#e8e8e8", fontFamily: "'Inter', sans-serif", padding: "32px 24px" }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#e8e8e8", fontFamily: "'Inter', sans-serif", paddingBottom: 32 }}>
+      <Navbar />
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 24px" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
           <div>
-            <button onClick={() => navigate("/matches")} style={{ background: "transparent", border: "none", color: "#555", fontSize: 12, cursor: "pointer", padding: 0, letterSpacing: 1 }}>
-              ← PARTIDAS
-            </button>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 700, color: "#f4f4f4", marginTop: 6 }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 700, color: "#f4f4f4" }}>
               ADICIONAR PARTIDA
             </div>
           </div>
@@ -217,7 +216,7 @@ export function AddMatch() {
               onClick={handleSave}
               disabled={saving || selectedCount === 0}
               style={{
-                background: selectedCount > 0 ? "#cc2200" : "#2a2a2a",
+                background: selectedCount > 0 ? "#0e7490" : "#2a2a2a",
                 border: "none", color: selectedCount > 0 ? "#fff" : "#555",
                 fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
                 fontSize: 16, letterSpacing: 1.5, padding: "12px 22px", cursor: saving ? "wait" : "pointer",
@@ -333,7 +332,7 @@ export function AddMatch() {
                     style={{ borderBottom: "1px solid #111", background: row.selected ? "#0d0d0d" : "transparent", opacity: row.selected ? 1 : 0.5 }}
                   >
                     <td style={{ padding: "6px 12px" }}>
-                      <input type="checkbox" checked={row.selected} onChange={() => toggleRow(idx)} style={{ accentColor: "#cc2200", cursor: "pointer" }} />
+                      <input type="checkbox" checked={row.selected} onChange={() => toggleRow(idx)} style={{ accentColor: "#0e7490", cursor: "pointer" }} />
                     </td>
                     <td style={{ padding: "6px 12px" }}>
                       <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 600, color: "#d0d0d0" }}>

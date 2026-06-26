@@ -15,7 +15,9 @@ Formato de mensagem (JSON):
 
 import json
 import os
+from collections import defaultdict
 from datetime import datetime, timezone
+from time import time
 from typing import Dict
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
@@ -24,6 +26,14 @@ from jose import JWTError, jwt
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 HISTORY_LIMIT = 50
+
+# Rate limiting em memória — sem Redis, sem dependência nova.
+# Estado reinicia com o servidor (aceitável para MVP: flood ocasional perde o estado
+# após restart, mas protege contra flood contínuo durante a sessão).
+RATE_WINDOW = 10   # segundos por janela deslizante
+RATE_MAX    = 5    # máximo de mensagens por jogador por janela
+
+_rate: Dict[int, list] = defaultdict(list)  # player_id → lista de timestamps
 
 # Mapa de conexões ativas: player_id → (WebSocket, nickname, avatar_initials)
 _connections: Dict[int, tuple] = {}
@@ -120,6 +130,14 @@ async def chat_ws(websocket: WebSocket, token: str = Query(...)):
 
             if not text:
                 continue
+
+            # Rate limiting: janela deslizante de RATE_WINDOW segundos
+            now = time()
+            _rate[player_id] = [t for t in _rate[player_id] if now - t < RATE_WINDOW]
+            if len(_rate[player_id]) >= RATE_MAX:
+                await websocket.send_json({"error": "rate_limit", "retry_after": RATE_WINDOW})
+                continue
+            _rate[player_id].append(now)
 
             timestamp = datetime.now(timezone.utc)
 
