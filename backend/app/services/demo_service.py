@@ -3,12 +3,16 @@ demo_service — parse leve de .dem do CS2
 
 Estratégia de memória:
   1. Salva bytes em arquivo temporário
-  2. Parseia APENAS os eventos necessários (player_death, player_hurt, round_end, player_blind)
+  2. Parseia APENAS os eventos necessários (player_death, player_hurt, round_end,
+     player_blind, item_purchase)
   3. Deleta o arquivo temporário imediatamente após o parse dos eventos
   4. Agrega métricas em memória (dicts leves, sem DataFrames)
   5. Retorna apenas as stats computadas
 
 NÃO usa parse_ticks() — evita carregar todos os snapshots do demo em memória.
+disadvantage_kills/advantage_kills/eco_kills/kast_percent também NÃO precisam de
+parse_ticks: contagem de vivos por time e gasto por round são derivados só dos
+eventos já parseados (player_death + item_purchase), em ordem cronológica de tick.
 """
 
 import os
@@ -54,7 +58,7 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
             errors.append("Não foi possível ler o mapa do header.")
 
         # ── 3. Parseia apenas os eventos necessários ───────────────────────────
-        kills_df = hurt_df = rounds_df = flash_df = None
+        kills_df = hurt_df = rounds_df = flash_df = purchase_df = None
 
         try:
             kills_df = parser.parse_event(
@@ -79,6 +83,11 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
             flash_df = parser.parse_event("player_blind", player=["team_num", "steamid"])
         except Exception as e:
             errors.append(f"Eventos de flash indisponíveis: {e}")
+
+        try:
+            purchase_df = parser.parse_event("item_purchase", other=["total_rounds_played"])
+        except Exception as e:
+            errors.append(f"Eventos de compra indisponíveis: {e}")
 
     finally:
         # ── 3b. Descarta o arquivo imediatamente ──────────────────────────────
@@ -135,10 +144,17 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
                 hurt.append({"attacker": atk, "dmg": int(dmg), "weapon": weapon})
     del hurt_df
 
+    # total_rounds via contagem de round_end — mas o round_end do ÚLTIMO round às vezes
+    # não é capturado (demo termina logo após o kill decisivo, antes do evento disparar).
+    # Sem isso, total_rounds fica menor que o maior índice de round visto nas kills, e
+    # kast_percent (e adr) ficam inflados acima de 100% — usa o maior dos dois.
     total_rounds = 1
     if rounds_df is not None and not rounds_df.empty:
         total_rounds = max(len(rounds_df), 1)
     del rounds_df
+
+    max_kill_round = max((k["round"] for k in kills if k["round"] is not None and k["round"] >= 0), default=-1)
+    total_rounds = max(total_rounds, max_kill_round + 1)
 
     flash_by_attacker: dict[str, int] = {}
     if flash_df is not None and not flash_df.empty:
@@ -149,6 +165,20 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
                 if atk:
                     flash_by_attacker[atk] = flash_by_attacker.get(atk, 0) + 1
     del flash_df
+
+    # Gasto por round (steamid -> valor comprado naquele round) — usado pra eco_kills.
+    # Só conta compras NOVAS no round; não reflete equipamento já carregado de rounds
+    # anteriores (ex: AWP comprada e mantida) — aproximação, não é o valor exato do loadout.
+    round_spend: dict[int, dict[str, int]] = {}
+    if purchase_df is not None and not purchase_df.empty:
+        for row in purchase_df.to_dicts() if hasattr(purchase_df, "to_dicts") else purchase_df.to_dict("records"):
+            steamid = _s(row.get("steamid"))
+            cost = row.get("cost") or 0
+            rnd = row.get("total_rounds_played")
+            if steamid and cost and rnd is not None:
+                bucket = round_spend.setdefault(rnd, {})
+                bucket[steamid] = bucket.get(steamid, 0) + int(cost)
+    del purchase_df
 
     # ── 5. Coleta identidades únicas ──────────────────────────────────────────
     player_keys: set[str] = set()
@@ -168,21 +198,54 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
 
     # ── 6. Agrega métricas ────────────────────────────────────────────────────
     seen_opening_rounds: set = set()
-    recent_kills: list[tuple] = []  # (tick, victim_team, attacker_name)
+    recent_kills: list[dict] = []  # últimos kills (tick, atk_team, vic_team, atk, vic)
+
+    # Estimativa do tamanho de cada time — usado só pra classificar advantage/
+    # disadvantage kills. Assume times parelhos (mix 5v5 padrão do grupo).
+    team_size = max(1, (len(player_keys) + 1) // 2)
+    alive: dict[int, int] = {}
+    current_round: int | None = None
+
+    died_rounds: dict[str, set] = {}    # player -> rounds em que morreu
+    kast_rounds: dict[str, set] = {}    # player -> rounds com K, A ou Trade
 
     for k in kills:
         atk, vic = k["attacker"], k["victim"]
         rnd, tick = k["round"], k["tick"]
+        atk_team, vic_team = k["atk_team"], k["vic_team"]
+
+        if rnd != current_round:
+            current_round = rnd
+            alive = {}
 
         if atk and atk in stats and atk != vic:
             stats[atk]["kills"] += 1
             stats[atk]["_ttk_ticks"].append(tick)
+            kast_rounds.setdefault(atk, set()).add(rnd)
 
         if vic and vic in stats:
             stats[vic]["deaths"] += 1
+            died_rounds.setdefault(vic, set()).add(rnd)
 
         if k["assister"] and k["assister"] in stats:
             stats[k["assister"]]["assists"] += 1
+            kast_rounds.setdefault(k["assister"], set()).add(rnd)
+
+        # Vantagem numérica / eco — contagem de vivos por time antes desse kill
+        if atk and atk in stats and atk != vic and atk_team is not None and vic_team is not None and atk_team != vic_team:
+            alive.setdefault(atk_team, team_size)
+            alive.setdefault(vic_team, team_size)
+            if alive[atk_team] < alive[vic_team]:
+                stats[atk]["disadvantage_kills"] += 1
+            elif alive[atk_team] > alive[vic_team]:
+                stats[atk]["advantage_kills"] += 1
+
+            vic_spend = round_spend.get(rnd, {}).get(vic, 0)
+            if vic_spend < ECO_THRESHOLD:
+                stats[atk]["eco_kills"] += 1
+
+        if vic_team is not None:
+            alive[vic_team] = max(alive.get(vic_team, team_size) - 1, 0)
 
         # Opening kills
         if rnd >= 0 and rnd not in seen_opening_rounds:
@@ -191,28 +254,35 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
                 stats[atk]["opening_kills"] += 1
 
         # Trade kills — verifica se victim matou alguém do time do attacker recentemente
-        atk_team = k["atk_team"]
         if atk and atk in stats and atk != vic:
-            for (prev_tick, prev_vic_team, prev_atk) in reversed(recent_kills[-30:]):
-                if (prev_atk == vic and
-                        atk_team is not None and prev_vic_team == atk_team and
-                        0 < tick - prev_tick <= TRADE_WINDOW_TICKS):
+            for prev in reversed(recent_kills[-30:]):
+                if (prev["atk"] == vic and
+                        atk_team is not None and prev["vic_team"] == atk_team and
+                        0 < tick - prev["tick"] <= TRADE_WINDOW_TICKS):
                     stats[atk]["trade_kills"] += 1
+                    # quem morreu naquele kill anterior foi "vingado" — conta pro KAST
+                    if prev["vic"] in stats:
+                        kast_rounds.setdefault(prev["vic"], set()).add(rnd)
                     break
 
         # Trade denials — attacker matou inimigo que ia tradar
-        vic_team = k["vic_team"]
-        for (prev_tick, prev_vic_team, prev_atk) in reversed(recent_kills[-30:]):
-            if (prev_atk and prev_atk in stats and
-                    vic_team is not None and prev_vic_team != vic_team and
-                    atk_team == prev_vic_team and
-                    0 < tick - prev_tick <= TRADE_WINDOW_TICKS):
+        for prev in reversed(recent_kills[-30:]):
+            if (prev["atk"] and prev["atk"] in stats and
+                    vic_team is not None and prev["vic_team"] != vic_team and
+                    atk_team == prev["vic_team"] and
+                    0 < tick - prev["tick"] <= TRADE_WINDOW_TICKS):
                 stats[atk]["trade_denials"] += 1
                 break
 
-        recent_kills.append((tick, vic_team, atk))
+        recent_kills.append({"tick": tick, "atk_team": atk_team, "vic_team": vic_team, "atk": atk, "vic": vic})
 
-    del kills, recent_kills, seen_opening_rounds
+    # Sobreviveu = não morreu naquele round — conta pro KAST de todo round jogado
+    for player in stats:
+        for r in range(total_rounds):
+            if r not in died_rounds.get(player, set()):
+                kast_rounds.setdefault(player, set()).add(r)
+
+    del kills, recent_kills, seen_opening_rounds, died_rounds, alive
 
     # Dano / ADR / Weapon stats
     dmg_totals: dict[str, int] = {}
@@ -248,11 +318,14 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
     del flash_by_attacker
 
     # ── 7. Métricas derivadas ─────────────────────────────────────────────────
-    for s in stats.values():
+    for player_key, s in stats.items():
         k = s["kills"]
         d = max(s["deaths"], 1)
         adr = s["adr"]
-        kast = 50.0  # sem parse_ticks não dá para calcular exato
+        # KAST = % de rounds em que o jogador teve Kill, Assist, Survived ou foi Traded
+        # min(..., 100.0) é defesa extra: por definição rounds_que_contam <= total_rounds,
+        # nunca deveria passar de 100, mas protege contra qualquer edge case de contagem.
+        kast = min(round(len(kast_rounds.get(player_key, set())) / total_rounds * 100, 1), 100.0) if total_rounds else 0.0
         s["kast_percent"] = kast
         s["hltv_rating"] = round(
             max(0.0073 * kast + 0.3591 * (k / total_rounds) - 0.5329 * (d / total_rounds)

@@ -27,8 +27,12 @@ const STAT_COLS: { key: keyof PlayerStatsCreate; label: string; min: number; max
   { key: "adr_difference", label: "ADR+/-", min: -200, max: 200, step: 0.1 },
   { key: "hltv_rating", label: "RATING", min: 0, max: 5, step: 0.001 },
   { key: "kast_percent", label: "KAST%", min: 0, max: 100, step: 0.1 },
+  { key: "disadvantage_kills", label: "DISADV K", min: 0, max: 30, step: 1 },
+  { key: "advantage_kills", label: "ADVTG K", min: 0, max: 30, step: 1 },
+  { key: "eco_kills", label: "ECO K", min: 0, max: 30, step: 1 },
   { key: "opening_kills", label: "OPEN K", min: 0, max: 20, step: 1 },
   { key: "trade_kills", label: "TRADE", min: 0, max: 20, step: 1 },
+  { key: "trade_denials", label: "T.DENIAL", min: 0, max: 20, step: 1 },
   { key: "time_to_kill_ms", label: "TTK(ms)", min: 0, max: 2000, step: 1 },
   { key: "flash_assists", label: "FA", min: 0, max: 20, step: 1 },
   { key: "grenade_damage", label: "NADE DMG", min: 0, max: 500, step: 1 },
@@ -41,7 +45,8 @@ function emptyRow(playerId: number, selected = false): StatRow {
     player_id: playerId, selected,
     kills: 0, deaths: 0, assists: 0, damage_total: 0,
     adr: 0, adr_difference: 0, hltv_rating: 0, kast_percent: 0,
-    opening_kills: 0, trade_kills: 0, time_to_kill_ms: 0,
+    disadvantage_kills: 0, advantage_kills: 0, eco_kills: 0,
+    opening_kills: 0, trade_kills: 0, trade_denials: 0, time_to_kill_ms: 0,
     flash_assists: 0, grenade_damage: 0, he_enemies_hit: 0, fire_enemies_hit: 0,
   };
 }
@@ -67,8 +72,12 @@ function buildRows(ps: PlayerResponse[], demoPlayers?: DemoPlayerStat[]): StatRo
       adr_difference: match.adr_difference ?? 0,
       hltv_rating: match.hltv_rating ?? 0,
       kast_percent: match.kast_percent ?? 0,
+      disadvantage_kills: match.disadvantage_kills ?? 0,
+      advantage_kills: match.advantage_kills ?? 0,
+      eco_kills: match.eco_kills ?? 0,
       opening_kills: match.opening_kills ?? 0,
       trade_kills: match.trade_kills ?? 0,
+      trade_denials: match.trade_denials ?? 0,
       time_to_kill_ms: match.time_to_kill_ms ?? 0,
       flash_assists: match.flash_assists ?? 0,
       grenade_damage: match.grenade_damage ?? 0,
@@ -98,6 +107,7 @@ export function AddMatch() {
   const [demoError, setDemoError] = useState("");
   const [demoCreated, setDemoCreated] = useState<DemoCreatedPlayer[]>([]);
   const [demoUnmatched, setDemoUnmatched] = useState<string[]>([]);
+  const [demoInactive, setDemoInactive] = useState<DemoCreatedPlayer[]>([]);
 
   useEffect(() => {
     playersApi.list().then(ps => {
@@ -140,6 +150,7 @@ export function AddMatch() {
       if (result.map_name) setMapName(result.map_name);
       setDemoCreated(result.created_players);
       setDemoUnmatched(result.players.filter(p => p.player_id == null).map(p => p.nickname));
+      setDemoInactive(result.inactive_players);
       setDemoFile(null);
     } catch (e: any) {
       setDemoError(e.message ?? "Erro ao processar demo");
@@ -260,6 +271,12 @@ export function AddMatch() {
         {demoUnmatched.length > 0 && (
           <div style={{ background: "rgba(224,168,46,0.05)", border: "1px solid rgba(224,168,46,0.2)", padding: "10px 16px", marginBottom: 16, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#e0a82e" }}>
             ⚠ sem steam_id no demo, não foi possível criar/casar conta: {demoUnmatched.join(", ")}
+          </div>
+        )}
+
+        {demoInactive.length > 0 && (
+          <div style={{ background: "rgba(224,168,46,0.05)", border: "1px solid rgba(224,168,46,0.2)", padding: "10px 16px", marginBottom: 16, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#e0a82e" }}>
+            ⚠ conta desativada (is_active=False), não aparece pra selecionar — reative em /admin antes de salvar: {demoInactive.map(p => p.nickname).join(", ")}
           </div>
         )}
 

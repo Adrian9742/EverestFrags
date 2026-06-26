@@ -4,24 +4,26 @@ Router — chat em tempo real via WebSocket
 Endpoint:
   WS /api/chat/ws?token=<JWT>  → conexão WebSocket autenticada
 
-Mensagens são broadcast para todos os clientes conectados.
+Mensagens são broadcast para todos os clientes conectados E persistidas na tabela
+chat_messages. Ao conectar, o cliente recebe um lote com as últimas mensagens
+({"type": "history"}) antes de qualquer mensagem nova chegar.
+
 Formato de mensagem (JSON):
   Entrada:  { "text": "mensagem" }
-  Saída:    { "player_id": 1, "nickname": "GodBR", "avatar_initials": "GB", "text": "mensagem", "timestamp": "..." }
-
-Sem persistência — mensagens existem apenas em memória enquanto o servidor está no ar.
+  Saída:    { "type": "message", "player_id": 1, "nickname": "GodBR", "avatar_initials": "GB", "text": "...", "timestamp": "..." }
 """
 
 import json
+import os
 from datetime import datetime, timezone
 from typing import Dict
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from jose import JWTError, jwt
 
-import os
-
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+HISTORY_LIMIT = 50
 
 # Mapa de conexões ativas: player_id → (WebSocket, nickname, avatar_initials)
 _connections: Dict[int, tuple] = {}
@@ -58,6 +60,7 @@ async def chat_ws(websocket: WebSocket, token: str = Query(...)):
     # Importa aqui para evitar import circular
     from app.database import SessionLocal
     from app.models.player import Player
+    from app.models.chat_message import ChatMessage
 
     db = SessionLocal()
     try:
@@ -66,11 +69,35 @@ async def chat_ws(websocket: WebSocket, token: str = Query(...)):
         if not player:
             await websocket.close(code=4003)
             return
+
+        # Histórico — últimas mensagens, em ordem cronológica
+        history_rows = (
+            db.query(ChatMessage)
+            .order_by(ChatMessage.created_at.desc())
+            .limit(HISTORY_LIMIT)
+            .all()
+        )
+        history_rows.reverse()
     finally:
         db.close()
 
     await websocket.accept()
     _connections[player_id] = (websocket, player.nickname, player.avatar_initials)
+
+    await websocket.send_text(json.dumps({
+        "type": "history",
+        "messages": [
+            {
+                "type": "message",
+                "player_id": m.player_id,
+                "nickname": m.nickname,
+                "avatar_initials": m.avatar_initials,
+                "text": m.text,
+                "timestamp": m.created_at.isoformat(),
+            }
+            for m in history_rows
+        ],
+    }, ensure_ascii=False))
 
     # Avisa que o player entrou
     await _broadcast({
@@ -94,13 +121,27 @@ async def chat_ws(websocket: WebSocket, token: str = Query(...)):
             if not text:
                 continue
 
+            timestamp = datetime.now(timezone.utc)
+
+            db = SessionLocal()
+            try:
+                db.add(ChatMessage(
+                    player_id=player_id,
+                    nickname=player.nickname,
+                    avatar_initials=player.avatar_initials,
+                    text=text,
+                ))
+                db.commit()
+            finally:
+                db.close()
+
             await _broadcast({
                 "type": "message",
                 "player_id": player_id,
                 "nickname": player.nickname,
                 "avatar_initials": player.avatar_initials,
                 "text": text,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": timestamp.isoformat(),
             })
 
     except WebSocketDisconnect:
