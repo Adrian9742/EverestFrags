@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { PodiumCard } from "../components/PodiumCard";
 import { RankCard } from "../components/RankCard";
 import { PlayerDetailModal } from "../components/PlayerDetailModal";
+import { CompareModal } from "../components/CompareModal";
 import { Navbar } from "../components/Navbar";
 
 export function Dashboard() {
@@ -22,6 +23,7 @@ export function Dashboard() {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState<RankingEntry | null>(null);
+  const [comparing, setComparing] = useState(false);
 
   async function loadData() {
     try {
@@ -140,6 +142,19 @@ export function Dashboard() {
             <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "34px 0 8px" }}>
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>PÓDIO</span>
               <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+              <button
+                onClick={() => setComparing(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  border: "1px solid #1e2a36", background: "#0d1218", cursor: "pointer",
+                  padding: "8px 14px",
+                }}
+              >
+                <span style={{ width: 6, height: 6, background: "#6366f1", flexShrink: 0 }} />
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12.5, letterSpacing: "1.5px", color: "#c6d2e0" }}>
+                  COMPARAR
+                </span>
+              </button>
             </div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#2e3e50", letterSpacing: "0.5px", marginBottom: 18 }}>
               // score relativo ao grupo — atualiza a cada nova partida registrada
@@ -173,9 +188,9 @@ export function Dashboard() {
             <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap", marginTop: 34, paddingTop: 20, borderTop: "1px solid #151d26" }}>
               <div style={{ display: "flex", gap: 26, flexWrap: "wrap" }}>
                 {[
-                  { color: "#0e7490", label: "Combate 1/3", detail: "kills, dano, ADR, rating, KAST" },
-                  { color: "#6366f1", label: "Duelos 1/3",  detail: "opening, trades, TTK" },
-                  { color: "#e0a82e", label: "Utility 1/3", detail: "flashes, HE, incendiária" },
+                  { color: "#0e7490", label: "Combate 30%", detail: "kills, dano, ADR, rating, KAST" },
+                  { color: "#6366f1", label: "Duelos 36%",  detail: "opening, trades, TTK" },
+                  { color: "#e0a82e", label: "Utility 34%", detail: "flashes, HE, incendiária" },
                 ].map(l => (
                   <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <span style={{ width: 10, height: 10, background: l.color }} />
@@ -195,6 +210,10 @@ export function Dashboard() {
 
       {selectedEntry && (
         <PlayerDetailModal entry={selectedEntry} allEntries={ranking} onClose={() => setSelectedEntry(null)} />
+      )}
+
+      {comparing && (
+        <CompareModal allEntries={ranking} onClose={() => setComparing(false)} />
       )}
     </div>
   );

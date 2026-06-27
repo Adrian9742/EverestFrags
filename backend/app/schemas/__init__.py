@@ -7,7 +7,7 @@ from app.schemas.match import (
     MatchCreate, MatchResponse, MatchDetailResponse, PaginatedMatchResponse
 )
 from app.schemas.auth import LoginRequest, TokenResponse, PasswordChange
-from app.schemas.ranking import RankingEntry
+from app.schemas.ranking import RankingEntry, GroupAveragesResponse
 from app.schemas.sort import PlayerInTeam, TeamResult, SortTeamsResponse
 
 __all__ = [
@@ -16,6 +16,6 @@ __all__ = [
     "MatchupCreate", "HeadToHeadResponse",
     "MatchCreate", "MatchResponse", "MatchDetailResponse", "PaginatedMatchResponse",
     "LoginRequest", "TokenResponse", "PasswordChange",
-    "RankingEntry",
+    "RankingEntry", "GroupAveragesResponse",
     "PlayerInTeam", "TeamResult", "SortTeamsResponse",
 ]

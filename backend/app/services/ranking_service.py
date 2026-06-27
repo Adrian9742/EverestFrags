@@ -40,7 +40,7 @@ from sqlalchemy.orm import Session
 
 from app.models.match import PlayerMatchStats
 from app.models.player import Player
-from app.schemas.ranking import RankingEntry
+from app.schemas.ranking import RankingEntry, GroupAveragesResponse
 
 # Pesos fixos das 3 categorias no score final — ver docstring do módulo.
 # Em teste: 30/36/34 (era 33/33/33).
@@ -238,3 +238,33 @@ def get_player_stats(db: Session, player_id: int) -> Dict[str, Any]:
         if entry.player_id == player_id:
             return entry
     return None
+
+
+def get_group_averages(db: Session) -> GroupAveragesResponse:
+    """
+    Médias da EverestFrags — um número por métrica representando o grupo todo,
+    não por jogador. Cada valor é a média entre TODAS as linhas de
+    player_match_stats (1 linha = 1 jogador em 1 partida), não a média dos
+    totais agregados por jogador (get_ranking) — isso evita que quem jogou
+    mais partidas pese diferente de quem jogou menos: cada partida individual
+    de cada jogador conta como 1 amostra, com o mesmo peso.
+    """
+    rows = (
+        db.query(PlayerMatchStats)
+        .join(Player)
+        .filter(Player.is_active == True)  # noqa: E712
+        .all()
+    )
+
+    if not rows:
+        return GroupAveragesResponse()
+
+    total_entries = len(rows)
+    metrics = SOMA_METRICS + MEDIA_METRICS
+    averages = {m: sum(float(getattr(r, m)) for r in rows) / total_entries for m in metrics}
+
+    return GroupAveragesResponse(
+        total_matches=len({r.match_id for r in rows}),
+        total_player_entries=total_entries,
+        **{m: round(v, 2) for m, v in averages.items()},
+    )

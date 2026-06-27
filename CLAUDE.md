@@ -73,7 +73,8 @@ EverestFrags/
 │           ├── ranking.py           ← GET /ranking (público — sem mais config de pesos)
 │           ├── sort.py              ← GET /sort-teams?players=1,2,3&teams=2
 │           ├── chat.py              ← WS /chat/ws?token=JWT (broadcast + persiste em chat_messages, histórico ao conectar)
-│           └── demo.py              ← POST /demo/parse (upload .dem, admin only, max 750 MB) — casa/cria players via steam_id, avisa contas inativas
+│           ├── demo.py              ← POST /demo/parse (upload .dem, admin only, max 750 MB) — casa/cria players via steam_id, avisa contas inativas
+│           └── stats.py             ← GET /stats/group-averages (médias da EverestFrags, não por jogador)
 │
 ├── frontend/
 │   ├── index.html                   ← HTML base com Google Fonts (Barlow Condensed, Inter, JetBrains Mono)
@@ -94,12 +95,14 @@ EverestFrags/
 │       │   ├── CategoryBar.tsx      ← Barra de progresso por categoria
 │       │   ├── PodiumCard.tsx       ← Card top-3 (radar + barras + pills), clicável → modal
 │       │   ├── RankCard.tsx         ← Card médio (4–11) e compacto (12+), clicável → modal
-│       │   └── PlayerDetailModal.tsx← Modal de detalhe do player (todas as métricas cruas)
+│       │   ├── PlayerDetailModal.tsx← Modal de detalhe do player (todas as métricas cruas)
+│       │   └── CompareModal.tsx     ← Modal "COMPARAR": 2 jogadores lado a lado + confronto direto
 │       └── pages/
 │           ├── Login.tsx            ← Login nickname+senha e botão "Entrar com Steam"
 │           ├── SteamCallback.tsx    ← Processa redirect do Steam (/auth/callback)
-│           ├── Dashboard.tsx        ← Ranking: pódio + grade + lista compacta
+│           ├── Dashboard.tsx        ← Ranking: pódio + grade + lista compacta + botão COMPARAR
 │           ├── Metrics.tsx          ← /metrics — leaderboard por métrica crua (ADR, trades, etc.)
+│           ├── Averages.tsx         ← /averages — médias da EverestFrags (grupo todo, não por jogador)
 │           ├── Matches.tsx          ← Histórico paginado + delete (admin) + clique abre MatchDetail
 │           ├── MatchDetail.tsx      ← /matches/:id — stats básicas (K/D/A, +/-, ADR, RATING) + delete (admin)
 │           ├── AddMatch.tsx         ← Formulário nova partida + drop-zone de .dem embutida (extrai e preenche na mesma tela)
@@ -656,6 +659,7 @@ players / player123
 | `/matches/:id` | público | Detalhes da partida — stats básicas por jogador |
 | `/sort` | público | Sorteio de times (Snake Draft) |
 | `/metrics` | público | Leaderboard por métrica crua (ADR, trades, dano de granada...) |
+| `/averages` | público | Médias da EverestFrags (grupo todo, não por jogador) |
 | `/profile` | autenticado | Perfil pessoal + alterar senha |
 | `/admin` | admin | Gestão de players e partidas |
 | `/chat` | público | Chat em tempo real (WebSocket) |
@@ -711,8 +715,8 @@ em github.com para evitar confusão.
 - [x] ~~Alembic — migrações incrementais quando o schema precisar evoluir~~ → **implementado** — `alembic/` configurado (`env.py` lê `DATABASE_URL` do `.env`, `target_metadata = Base.metadata`); migração baseline `8c264163dd4b` gerada e "stamped" no banco local (diff vazio = models já em sync com o schema existente). Daqui pra frente, mudança de schema = `alembic revision --autogenerate -m "..."` + `alembic upgrade head`, não mais `ALTER TABLE` manual.
 - [x] Integração direta com scope.gg → **pesquisado, não implementável**: scope.gg não tem API pública (confirmado via busca — sem documentação de API, sem endpoint oficial). Restaria só scraping, frágil e fora de escopo; não implementado por decisão.
 - [x] ~~Aviso explícito no AddMatch quando um `player_id` resolvido pelo demo pertence a uma conta `is_active=False`~~ → **implementado** — `POST /api/demo/parse` retorna `inactive_players[]`; `AddMatch.tsx` mostra um banner de aviso separado do de "sem steam_id", recomendando reativar em `/admin`
-- [ ] Página com a média da EverestFrags — mostrar a média do grupo de kills, deaths, ADR, etc. (não só por jogador, um número consolidado do grupo todo). Pedido pelo Adrian em 2026-06-27, ainda não implementado.
-- [ ] Comparar 2 players lado a lado — botão "COMPARAR" (ex: no Dashboard), abre modal pra escolher 2 jogadores e mostra as métricas de ambos lado a lado, destacando vantagens/desvantagens de cada um (parecido com o painel "POR QUE #N?" do PlayerDetailModal, mas comparando 2 players entre si em vez de 1 player vs a média do grupo). Pedido pelo Adrian em 2026-06-27 — **UI ainda não implementada**, mas o confronto direto (item abaixo) já está pronto no backend.
+- [x] ~~Página com a média da EverestFrags~~ → **implementado em 2026-06-27** — `GET /api/stats/group-averages` (router `stats.py`, função `ranking_service.get_group_averages`) calcula a média de cada métrica entre TODAS as linhas de `player_match_stats` (1 linha = 1 jogador em 1 partida), não a média dos totais por jogador — assim quem jogou mais partidas não pesa mais nem menos. Página `/averages` (`Averages.tsx`) mostra os números agrupados por categoria (Combate/Duelos/Utility), com `total_matches` e `total_player_entries` de contexto.
+- [x] ~~Comparar 2 players lado a lado~~ → **implementado em 2026-06-27** — botão "COMPARAR" no Dashboard (ao lado do título "PÓDIO") abre `CompareModal.tsx`: 2 selects pra escolher os jogadores (a partir do `allEntries` já carregado, sem endpoint novo pra isso), tabela de métricas lado a lado destacando quem está melhor em cada uma (mesma lógica de inversão do PlayerDetailModal — menor é melhor em DEATHS/TTK), veredito de quem está na frente no score final, e a seção "Confronto Direto" usando o head-to-head já implementado (`GET /api/players/{a}/vs/{b}`).
   - [x] ~~Confronto direto (head-to-head): kills e flash_assists entre 2 players específicos~~ → **implementado em 2026-06-27** — tabela `player_vs_player_stats` (uma linha por direção: quem agiu → quem recebeu), `demo_service.py` rastreia o par durante o parse em vez de descartar (kills já tinha atacante+vítima por evento; flash assist idem), `POST /api/demo/parse` resolve player_id/opponent_id e retorna em `matchups[]`, `POST /api/matches` persiste via `MatchupCreate`, novo endpoint `GET /api/players/{id}/vs/{id2}` agrega em todas as partidas (kills de cada um, flash_assists de cada um, partidas jogadas juntos). Só vale pra partidas cadastradas via upload de demo a partir de agora — não retroativo nas já existentes (o `.dem` é descartado após o parse). **Sem UI ainda** — só a API; entra no modal de comparação quando ele for construído.
   - [ ] Dano de HE/molotov por vítima específica (quantas vezes X bangou/queimou Y) — não implementado. O evento `player_hurt` hoje só guarda quem causou o dano (`demo_service.py`), não em quem; precisaria adicionar o steamid da vítima no `parse_event` e uma coluna nova em `player_vs_player_stats` (ex: `he_damage`, `fire_damage`). Decisão consciente de deixar pra depois (pedido pelo Adrian em 2026-06-27) — não é mais urgente que o resto da fila.
 

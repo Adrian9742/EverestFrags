@@ -152,6 +152,56 @@ export const rankingApi = {
   get: () => request<RankingEntry[]>("/api/ranking"),
 };
 
+// ─── Stats consolidadas do grupo ────────────────────────────────────────────
+
+export interface GroupAveragesResponse {
+  total_matches: number;
+  total_player_entries: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  damage_total: number;
+  adr: number;
+  adr_difference: number;
+  hltv_rating: number;
+  kast_percent: number;
+  opening_kills: number;
+  trade_kills: number;
+  trade_denials: number;
+  time_to_kill_ms: number;
+  flash_assists: number;
+  grenade_damage: number;
+  he_enemies_hit: number;
+  fire_enemies_hit: number;
+  fire_damage: number;
+  disadvantage_kills: number;
+  advantage_kills: number;
+  eco_kills: number;
+}
+
+export const statsApi = {
+  groupAverages: () => request<GroupAveragesResponse>("/api/stats/group-averages"),
+};
+
+// ─── Confronto direto (head-to-head) ────────────────────────────────────────
+
+export interface HeadToHeadResponse {
+  player_id: number;
+  player_nickname: string;
+  opponent_id: number;
+  opponent_nickname: string;
+  matches_together: number;
+  player_kills: number;
+  opponent_kills: number;
+  player_flash_assists: number;
+  opponent_flash_assists: number;
+}
+
+export const playersVsApi = {
+  headToHead: (playerId: number, opponentId: number) =>
+    request<HeadToHeadResponse>(`/api/players/${playerId}/vs/${opponentId}`),
+};
+
 // ─── Players ────────────────────────────────────────────────────────────────
 
 export interface PlayerResponse {

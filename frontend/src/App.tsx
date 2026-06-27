@@ -10,6 +10,7 @@
  *   /matches/:id   → público (detalhes da partida — stats básicas)
  *   /sort          → público (sorteio de times)
  *   /metrics       → público (leaderboard por métrica crua)
+ *   /averages      → público (médias consolidadas da EverestFrags)
  *   /profile       → autenticado (perfil pessoal + alterar senha)
  *   /admin         → admin (gestão de players e partidas)
  *   /chat          → público (placeholder — WebSocket em desenvolvimento)
@@ -30,6 +31,7 @@ import { MatchDetail } from "./pages/MatchDetail";
 import { AddMatch } from "./pages/AddMatch";
 import { Sort } from "./pages/Sort";
 import { Metrics } from "./pages/Metrics";
+import { Averages } from "./pages/Averages";
 import { Profile } from "./pages/Profile";
 import { Admin } from "./pages/Admin";
 import { Chat } from "./pages/Chat";
@@ -47,6 +49,7 @@ export default function App() {
           <Route path="/matches/:id" element={<MatchDetail />} />
           <Route path="/sort" element={<Sort />} />
           <Route path="/metrics" element={<Metrics />} />
+          <Route path="/averages" element={<Averages />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="/chat" element={<Chat />} />

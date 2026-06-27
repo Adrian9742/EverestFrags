@@ -19,6 +19,7 @@ Rotas públicas (sem token):
   GET  /api/players
   GET  /api/matches
   GET  /api/sort-teams
+  GET  /api/stats/group-averages
 
 Rotas autenticadas (qualquer player logado):
   GET  /api/auth/me
@@ -38,7 +39,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routers import auth, players, matches, ranking, sort, steam_auth, chat, demo
+from app.routers import auth, players, matches, ranking, sort, steam_auth, chat, demo, stats
 
 # Importa todos os models para garantir que o create_all os detecte
 import app.models  # noqa: F401
@@ -71,6 +72,7 @@ app.include_router(ranking.router)
 app.include_router(sort.router)
 app.include_router(chat.router)
 app.include_router(demo.router)
+app.include_router(stats.router)
 
 
 @app.on_event("startup")
