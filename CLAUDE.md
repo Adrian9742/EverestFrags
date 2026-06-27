@@ -312,26 +312,24 @@ Se todos os jogadores têm o mesmo valor numa métrica → score = 50 para todos
 ### Passo 4 — Score final ponderado
 
 ```
-score_final = (score_combate  × 1/3)
-            + (score_duelo    × 1/3)
-            + (score_utility  × 1/3)
+score_final = (score_combate  × 0.30)
+            + (score_duelo    × 0.36)
+            + (score_utility  × 0.34)
 ```
 
-Pesos **fixos e iguais** (1/3 cada), definidos como constantes em `ranking_service.py`
-(`WEIGHT_COMBAT`/`WEIGHT_DUEL`/`WEIGHT_UTILITY`) — não existe mais edição de pesos (nem
-por admin). A versão anterior permitia configurar os pesos (ex: 50/30/20) via tabela
-`ranking_config` e um modal no Dashboard; isso foi removido por decisão de design, não
-só por preferência visual:
+Pesos **fixos**, definidos como constantes em `ranking_service.py`
+(`WEIGHT_COMBAT`/`WEIGHT_DUEL`/`WEIGHT_UTILITY`) — não existe edição de pesos via admin/UI,
+só direto no código. Não existe mais tabela `ranking_config` nem modal de configuração
+(removidos — ver decisão abaixo).
 
-> **Por que pesos iguais em vez de editáveis?** Deixar o admin escolher livremente quanto
-> cada categoria vale é, na prática, uma decisão subjetiva sem base objetiva — não há
-> motivo pra Combate valer mais que Utility além de "alguém decidiu assim". A alternativa
-> "mais rigorosa" seria derivar os pesos estatisticamente (ex: correlacionar cada score
-> com taxa de vitória do grupo), mas com o histórico de partidas ainda pequeno (~10-20
-> partidas) isso seria instável — mudaria a cada partida nova e seria difícil de explicar
-> pro grupo. Pesos iguais são a opção mais estável e defensável disponível agora: nenhuma
-> categoria é privilegiada por decisão de alguém, e não se move sozinha conforme mais
-> dados entram.
+> **Por que 30/36/34 em vez de 1/3 cada?** A versão original usava pesos exatamente iguais
+> (1/3/1/3/1/3) pela mesma razão que continua valendo agora: não há base estatística pra
+> justificar uma categoria valer mais que outra com o histórico de partidas ainda pequeno
+> (~10-20 partidas), e pesos editáveis por admin seriam uma escolha subjetiva sem
+> fundamento. O ajuste pra 30/36/34 é um leve favorecimento de Duelos/Utility sobre
+> Combate — testado e mantido por decisão do grupo, não por uma correlação estatística
+> nova. Continua sendo um valor fixo no código (não editável por admin), e a soma continua
+> em 1.0 (100%).
 
 ---
 

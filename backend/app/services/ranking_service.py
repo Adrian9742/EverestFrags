@@ -43,9 +43,10 @@ from app.models.player import Player
 from app.schemas.ranking import RankingEntry
 
 # Pesos fixos das 3 categorias no score final — ver docstring do módulo.
-WEIGHT_COMBAT = 1 / 3
-WEIGHT_DUEL = 1 / 3
-WEIGHT_UTILITY = 1 / 3
+# Em teste: 30/36/34 (era 33/33/33).
+WEIGHT_COMBAT = 0.30
+WEIGHT_DUEL = 0.36
+WEIGHT_UTILITY = 0.34
 
 
 # Métricas de soma — agregadas somando valores de todas as partidas
