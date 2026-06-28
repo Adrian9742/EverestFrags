@@ -1,37 +1,303 @@
-/**
- * Dashboard — página principal (/)
- *
- * Layout: header com logo montanha + stats + chips de peso + avatar logado,
- * Navbar rebrand, depois: pódio 3 colunas, grade 4 colunas para 4–11,
- * lista compacta para 12+, rodapé com legenda de categorias.
- *
- * Paleta rebrand v2: #070a0e fundo, #0e7490 teal, #6366f1 indigo, #e0a82e ouro.
- */
-
-import { useEffect, useState } from "react";
-import { rankingApi, playersApi, type RankingEntry } from "../api/client";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  matchesApi,
+  playersApi,
+  rankingApi,
+  type MatchResponse,
+  type PlayerResponse,
+  type RankingEntry,
+} from "../api/client";
 import { useAuth } from "../context/AuthContext";
-import { PodiumCard } from "../components/PodiumCard";
-import { RankCard } from "../components/RankCard";
+import { Navbar } from "../components/Navbar";
 import { PlayerDetailModal } from "../components/PlayerDetailModal";
 import { CompareModal } from "../components/CompareModal";
-import { Navbar } from "../components/Navbar";
+
+function number(value: number, digits = 1) {
+  return Number.isFinite(value) ? value.toFixed(digits) : "0";
+}
+
+function score(value: number) {
+  return Math.round(value || 0);
+}
+
+function percent(value: number) {
+  return `${Math.max(4, Math.min(100, score(value)))}%`;
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase())
+    .join("") || "EF";
+}
+
+function getBestBy(ranking: RankingEntry[], key: keyof RankingEntry) {
+  if (ranking.length === 0) return null;
+
+  return ranking.reduce((best, current) => {
+    const bestValue = Number(best[key] || 0);
+    const currentValue = Number(current[key] || 0);
+    return currentValue > bestValue ? current : best;
+  }, ranking[0]);
+}
+
+function getPlayerTag(entry: RankingEntry) {
+  if (entry.rank === 1) return "Topo do Everest";
+  if (entry.score_duel >= entry.score_combat && entry.score_duel >= entry.score_utility) return "Duelista";
+  if (entry.score_utility >= entry.score_combat && entry.score_utility >= entry.score_duel) return "Suporte";
+  if (entry.adr >= 85) return "Dano alto";
+  return "Em atividade";
+}
+
+function Avatar({
+  initials,
+  nickname,
+  size = "md",
+  shape = "circle",
+}: {
+  initials?: string;
+  nickname: string;
+  size?: "sm" | "md" | "lg";
+  shape?: "circle" | "squircle";
+}) {
+  return (
+    <div className={`ig-avatar ig-avatar-${size} ${shape === "squircle" ? "ig-avatar-squircle" : ""}`} title={nickname}>
+      {initials || getInitials(nickname)}
+    </div>
+  );
+}
+
+function MetricChip({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="ig-metric-chip">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function SquadRadar({
+  ranking,
+  players,
+  onSelect,
+}: {
+  ranking: RankingEntry[];
+  players: PlayerResponse[];
+  onSelect: (entry: RankingEntry) => void;
+}) {
+  if (ranking.length > 0) {
+    return (
+      <section className="ef-squad-radar" aria-label="Radar do squad">
+        <div className="ef-radar-head">
+          <div>
+            <span>Radar do squad</span>
+            <strong>Quem está em evidência</strong>
+          </div>
+          <Link to="/metrics">ranking completo</Link>
+        </div>
+
+        <div className="ef-radar-scroll">
+          {ranking.slice(0, 10).map(entry => (
+            <button key={entry.player_id} type="button" className="ef-player-signal" onClick={() => onSelect(entry)}>
+              <div className="ef-player-signal-top">
+                <span className="ef-rank-chip">#{entry.rank}</span>
+                <Avatar initials={entry.avatar_initials} nickname={entry.player_nickname} size="sm" shape="squircle" />
+              </div>
+
+              <strong>{entry.player_nickname}</strong>
+              <small>{getPlayerTag(entry)}</small>
+
+              <div className="ef-signal-score">
+                <span>score</span>
+                <b>{score(entry.score_final)}</b>
+              </div>
+
+              <div className="ef-signal-bars" aria-hidden="true">
+                <span style={{ width: percent(entry.score_combat) }} />
+                <span style={{ width: percent(entry.score_duel) }} />
+                <span style={{ width: percent(entry.score_utility) }} />
+              </div>
+
+              <div className="ef-signal-meta">
+                <span>K/D {number(entry.kd_ratio, 2)}</span>
+                <span>ADR {number(entry.adr)}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="ef-squad-radar" aria-label="Jogadores do squad">
+      <div className="ef-radar-head">
+        <div>
+          <span>Squad</span>
+          <strong>Jogadores cadastrados</strong>
+        </div>
+      </div>
+
+      <div className="ef-radar-scroll">
+        {players.slice(0, 10).map(communityPlayer => (
+          <div key={communityPlayer.id} className="ef-player-signal ef-player-signal-muted">
+            <div className="ef-player-signal-top">
+              <span className="ef-rank-chip">{communityPlayer.is_active ? "ON" : "OFF"}</span>
+              <Avatar initials={communityPlayer.avatar_initials} nickname={communityPlayer.nickname} size="sm" shape="squircle" />
+            </div>
+
+            <strong>{communityPlayer.nickname}</strong>
+            <small>{communityPlayer.is_active ? "ativo no squad" : "inativo"}</small>
+
+            <div className="ef-signal-score">
+              <span>status</span>
+              <b>{communityPlayer.role === "admin" ? "admin" : "player"}</b>
+            </div>
+          </div>
+        ))}
+
+        {players.length === 0 && (
+          <div className="ef-player-signal ef-player-signal-muted">
+            <div className="ef-player-signal-top">
+              <span className="ef-rank-chip">EF</span>
+              <Avatar nickname="EverestFrags" size="sm" shape="squircle" />
+            </div>
+            <strong>EverestFrags</strong>
+            <small>aguardando dados</small>
+            <div className="ef-signal-score">
+              <span>status</span>
+              <b>online</b>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function MatchPost({ match }: { match: MatchResponse }) {
+  return (
+    <Link to={`/matches/${match.id}`} className="ig-post ig-match-post ef-feed-post">
+      <header className="ig-post-header">
+        <div className="ig-map-avatar">{(match.map_name || "?").replace("de_", "").slice(0, 2).toUpperCase()}</div>
+        <div>
+          <strong>Nova partida no feed</strong>
+          <span>Mix #{match.id} · {formatDate(match.played_at)} · {match.player_count} jogadores</span>
+        </div>
+      </header>
+
+      <div className="ig-match-body ef-match-post-body">
+        <div>
+          <span className="ig-post-label">mapa</span>
+          <h3>{match.map_name || "Mapa não informado"}</h3>
+        </div>
+
+        <div className="ig-match-count">
+          <strong>{match.player_count}</strong>
+          <span>players</span>
+        </div>
+      </div>
+
+      {match.notes && <p className="ig-post-text">{match.notes}</p>}
+
+      <footer className="ig-post-footer">
+        <span>Ver detalhes da partida</span>
+        {match.scope_url && <span>Scope disponível ↗</span>}
+      </footer>
+    </Link>
+  );
+}
+
+function RankingPost({
+  entry,
+  title,
+  text,
+  onOpen,
+}: {
+  entry: RankingEntry;
+  title: string;
+  text: string;
+  onOpen: () => void;
+}) {
+  return (
+    <article className="ig-post ig-ranking-post ef-feed-post">
+      <header className="ig-post-header">
+        <Avatar initials={entry.avatar_initials} nickname={entry.player_nickname} size="md" shape="squircle" />
+        <div>
+          <strong>{entry.player_nickname}</strong>
+          <span>{title}</span>
+        </div>
+      </header>
+
+      <p className="ig-post-text">{text}</p>
+
+      <div className="ef-score-breakdown">
+        <div>
+          <span>Combate</span>
+          <b>{score(entry.score_combat)}</b>
+          <em style={{ width: percent(entry.score_combat) }} />
+        </div>
+        <div>
+          <span>Duelos</span>
+          <b>{score(entry.score_duel)}</b>
+          <em style={{ width: percent(entry.score_duel) }} />
+        </div>
+        <div>
+          <span>Utility</span>
+          <b>{score(entry.score_utility)}</b>
+          <em style={{ width: percent(entry.score_utility) }} />
+        </div>
+      </div>
+
+      <div className="ig-post-metrics">
+        <MetricChip label="Score" value={score(entry.score_final)} />
+        <MetricChip label="K/D" value={number(entry.kd_ratio, 2)} />
+        <MetricChip label="ADR" value={number(entry.adr)} />
+      </div>
+
+      <button type="button" className="ig-post-action" onClick={onOpen}>
+        Ver perfil do jogador
+      </button>
+    </article>
+  );
+}
 
 export function Dashboard() {
-  const { player, logout } = useAuth();
+  const { player, isAdmin } = useAuth();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [totalPlayers, setTotalPlayers] = useState(0);
+  const [players, setPlayers] = useState<PlayerResponse[]>([]);
+  const [matches, setMatches] = useState<MatchResponse[]>([]);
+  const [totalMatches, setTotalMatches] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState<RankingEntry | null>(null);
   const [comparing, setComparing] = useState(false);
 
   async function loadData() {
     try {
-      const [r, players] = await Promise.all([rankingApi.get(), playersApi.list()]);
-      setRanking(r);
-      setTotalPlayers(players.length);
-    } catch (e) {
-      console.error("Erro ao carregar ranking:", e);
+      setLoading(true);
+
+      const [rankingData, playersData, matchesData] = await Promise.all([
+        rankingApi.get(),
+        playersApi.list(),
+        matchesApi.list(1, 6),
+      ]);
+
+      setRanking(rankingData);
+      setPlayers(playersData);
+      setMatches(matchesData.items);
+      setTotalMatches(matchesData.total);
+    } catch (error) {
+      console.error("Erro ao carregar feed:", error);
     } finally {
       setLoading(false);
     }
@@ -41,175 +307,185 @@ export function Dashboard() {
     loadData();
   }, []);
 
-  const podium  = ranking.slice(0, 3);
-  const midGrid = ranking.slice(3, 11);
-  const tail    = ranking.slice(11);
-  const totalMatches = ranking.length > 0 ? Math.max(...ranking.map(r => r.total_matches)) : 0;
+  const leader = ranking[0] ?? null;
+  const topAdr = useMemo(() => getBestBy(ranking, "adr"), [ranking]);
+  const topUtility = useMemo(() => getBestBy(ranking, "score_utility"), [ranking]);
+  const topFrag = useMemo(() => getBestBy(ranking, "kills"), [ranking]);
+  const topDuel = useMemo(() => getBestBy(ranking, "score_duel"), [ranking]);
+  const topPlayers = ranking.slice(0, 6);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#dde6f0", fontFamily: "'Inter', sans-serif", paddingBottom: 64 }}>
-
-      {/* Scanlines overlay */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.35 }} />
-      {/* Glow radial teal no topo */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 51, background: "radial-gradient(ellipse 90% 55% at 50% -10%, rgba(14,116,144,0.08), transparent 62%)" }} />
-
-      {/* Header */}
-      <header style={{ position: "relative", zIndex: 10, borderBottom: "1px solid #1b2530", background: "linear-gradient(180deg,#0d1218,#070a0e)", padding: "26px 48px 24px" }}>
-        {/* Silhueta de montanhas decorativa no fundo do header */}
-        <svg viewBox="0 0 1320 130" preserveAspectRatio="xMidYMax slice"
-          style={{ position: "absolute", left: 0, right: 0, bottom: 0, width: "100%", height: 130, zIndex: 0, pointerEvents: "none" }}
-          aria-hidden="true">
-          <path d="M0 130 L120 70 L210 96 L340 40 L430 88 L560 30 L660 78 L820 18 L930 74 L1080 44 L1180 86 L1320 52 L1320 130 Z" fill="rgba(14,116,144,0.06)" />
-          <path d="M0 130 L160 92 L300 110 L470 64 L600 104 L780 56 L900 100 L1060 72 L1220 104 L1320 84 L1320 130 Z" fill="rgba(99,102,241,0.05)" />
-        </svg>
-
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
-          {/* Logo montanha */}
-          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <div style={{ width: 46, height: 46, border: "2px solid #0e7490", display: "flex", alignItems: "center", justifyContent: "center", background: "#04222b", boxShadow: "0 0 14px rgba(14,116,144,.22)" }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <path d="M2 21 L9 7 L12.5 13 L15.5 6 L22 21 Z" fill="#0e7490" />
-                <path d="M15.5 6 L13.2 10 L17.8 10 Z" fill="#cfe6ee" />
-                <path d="M9 7 L7.3 10 L10.7 10 Z" fill="#cfe6ee" />
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 40, lineHeight: 0.92, letterSpacing: 1 }}>
-                <span style={{ color: "#f0f9ff" }}>EVEREST</span>
-                <span style={{ color: "#0e7490" }}>FRAGS</span>
-              </div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: "3.5px", color: "#4a5868", marginTop: 5 }}>
-                8849M · CS2 MIX SQUAD
-              </div>
-            </div>
-          </div>
-
-          {/* Stats + chips + usuário */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {[{ value: totalMatches, label: "PARTIDAS" }, { value: totalPlayers, label: "PLAYERS" }].map(s => (
-              <div key={s.label} style={{ display: "flex", flexDirection: "column", border: "1px solid #1e2a36", background: "#11171f", padding: "8px 16px", minWidth: 78 }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 22, fontWeight: 700, color: "#f0f9ff", lineHeight: 1 }}>{s.value}</span>
-                <span style={{ fontSize: 9.5, letterSpacing: "2px", color: "#4a5868", marginTop: 3 }}>{s.label}</span>
-              </div>
-            ))}
-
-            <div style={{ width: 1, height: 42, background: "#1e2a36", margin: "0 2px" }} />
-
-            {player && (
-              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                <div style={{ width: 38, height: 38, border: "1px solid #1e2a36", background: "#0d1218", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, color: "#c6d2e0" }}>
-                  {player.avatar_initials}
-                </div>
-                <div>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, color: "#e3ebf3", lineHeight: 1 }}>{player.nickname}</div>
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: "1.5px", color: player.role === "admin" ? "#22d3ee" : "#566476", marginTop: 3 }}>
-                    {player.role === "admin" ? "GESTOR" : "PLAYER"}
-                  </div>
-                </div>
-                <button onClick={logout} style={{ marginLeft: 2, width: 34, height: 34, border: "1px solid #212d3a", background: "#0d1218", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5d6d80" strokeWidth="2" strokeLinecap="round">
-                    <path d="M12 3v9" /><path d="M6.4 6.4a8 8 0 1 0 11.2 0" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Navegação rebrand */}
+    <div className="ig-page ef-social-app">
       <Navbar />
 
-      {/* Conteúdo */}
-      <main style={{ maxWidth: 1320, margin: "0 auto", padding: "0 48px", position: "relative", zIndex: 10 }}>
+      <main className="ig-layout ef-feed-layout">
+        <section className="ig-feed-column">
+          <header className="ig-mobile-header">
+            <div className="ig-mobile-logo">EF</div>
+            <strong>EverestFrags</strong>
+            {!player && <Link to="/login">Entrar</Link>}
+          </header>
 
-        {loading && (
-          <div style={{ textAlign: "center", padding: 80, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>
-            carregando ranking...
-          </div>
-        )}
+          <section className="ig-feed-topbar ef-feed-topbar">
+            <div>
+              <span>Feed do squad</span>
+              <h1>{player ? `Boa, ${player.nickname}` : "EverestFrags"}</h1>
+            </div>
 
-        {!loading && ranking.length === 0 && (
-          <div style={{ textAlign: "center", padding: 80, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>
-            nenhum jogador com partidas registradas ainda
-          </div>
-        )}
-
-        {!loading && ranking.length > 0 && (
-          <>
-            {/* Seção pódio */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "34px 0 8px" }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>PÓDIO</span>
-              <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
-              <button
-                onClick={() => setComparing(true)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  border: "1px solid #1e2a36", background: "#0d1218", cursor: "pointer",
-                  padding: "8px 14px",
-                }}
-              >
-                <span style={{ width: 6, height: 6, background: "#6366f1", flexShrink: 0 }} />
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12.5, letterSpacing: "1.5px", color: "#c6d2e0" }}>
-                  COMPARAR
-                </span>
+            {ranking.length >= 2 && (
+              <button type="button" onClick={() => setComparing(true)}>
+                Comparar
               </button>
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#2e3e50", letterSpacing: "0.5px", marginBottom: 18 }}>
-              // score relativo ao grupo — atualiza a cada nova partida registrada
-            </div>
-            {/* 3 colunas com o centro levemente maior (1º lugar destacado) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.08fr 1fr", gap: 18, alignItems: "end" }}>
-              {podium.map(e => <PodiumCard key={e.player_id} entry={e} onClick={() => setSelectedEntry(e)} />)}
-            </div>
-
-            {/* Seção classificação (4–11) */}
-            {midGrid.length > 0 && (
-              <>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "40px 0 22px" }}>
-                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>CLASSIFICAÇÃO</span>
-                  <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-                  {midGrid.map(e => <RankCard key={e.player_id} entry={e} onClick={() => setSelectedEntry(e)} />)}
-                </div>
-              </>
             )}
+          </section>
 
-            {/* Lista compacta (12+) */}
-            {tail.length > 0 && (
-              <div style={{ border: "1px solid #172029", background: "#0a0e13", marginTop: 14 }}>
-                {tail.map(e => <RankCard key={e.player_id} entry={e} compact onClick={() => setSelectedEntry(e)} />)}
-              </div>
-            )}
-
-            {/* Legenda de categorias */}
-            <footer style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap", marginTop: 34, paddingTop: 20, borderTop: "1px solid #151d26" }}>
-              <div style={{ display: "flex", gap: 26, flexWrap: "wrap" }}>
-                {[
-                  { color: "#0e7490", label: "Combate 30%", detail: "kills, dano, ADR, rating, KAST" },
-                  { color: "#6366f1", label: "Duelos 36%",  detail: "opening, trades, TTK" },
-                  { color: "#e0a82e", label: "Utility 34%", detail: "flashes, HE, incendiária" },
-                ].map(l => (
-                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                    <span style={{ width: 10, height: 10, background: l.color }} />
-                    <span style={{ fontSize: 11, color: "#5d6d80" }}>
-                      <b style={{ color: "#aebccd" }}>{l.label}</b> — {l.detail}
+          {loading ? (
+            <div className="ig-loading-card">
+              <div className="ig-loader" />
+              <p>Carregando o feed da comunidade...</p>
+            </div>
+          ) : (
+            <>
+              <section className="ig-composer ef-quick-panel">
+                <div className="ig-composer-left">
+                  <Avatar initials={player?.avatar_initials} nickname={player?.nickname || "Visitante"} size="sm" shape="squircle" />
+                  <div>
+                    <strong>{ranking.length > 0 ? "Escolha o que quer acompanhar" : "O feed aparece conforme o grupo joga"}</strong>
+                    <span>
+                      {ranking.length > 0
+                        ? "Partidas recentes, ranking, comparações e sorteio ficam a um clique."
+                        : "Quando o backend estiver com partidas, os posts entram aqui automaticamente."}
                     </span>
                   </div>
+                </div>
+
+                <div className="ig-composer-actions">
+                  <Link to="/matches">Partidas</Link>
+                  <Link to="/metrics">Ranking</Link>
+                  <Link to="/sort">Times</Link>
+                  {isAdmin && <Link to="/matches/new">Nova partida</Link>}
+                </div>
+              </section>
+
+              <div className="ig-post-stack">
+                {matches.map(match => <MatchPost key={match.id} match={match} />)}
+
+                {leader && (
+                  <RankingPost
+                    entry={leader}
+                    title="lidera o Everest agora"
+                    text={`#1 do squad com ${score(leader.score_final)} pontos, ${leader.total_matches} partidas e K/D ${number(leader.kd_ratio, 2)}.`}
+                    onOpen={() => setSelectedEntry(leader)}
+                  />
+                )}
+
+                {topAdr && topAdr.player_id !== leader?.player_id && (
+                  <RankingPost
+                    entry={topAdr}
+                    title="está causando mais dano"
+                    text={`${topAdr.player_nickname} aparece com ${number(topAdr.adr)} de ADR médio.`}
+                    onOpen={() => setSelectedEntry(topAdr)}
+                  />
+                )}
+
+                {topDuel && topDuel.player_id !== leader?.player_id && topDuel.player_id !== topAdr?.player_id && (
+                  <RankingPost
+                    entry={topDuel}
+                    title="está forte nos duelos"
+                    text={`Duel score ${score(topDuel.score_duel)} com destaque nas entradas e trocas.`}
+                    onOpen={() => setSelectedEntry(topDuel)}
+                  />
+                )}
+
+                {matches.length === 0 && (
+                  <article className="ig-post ig-empty-post ef-feed-post">
+                    <div className="ig-empty-icon">🎮</div>
+                    <h2>Nenhuma partida no feed ainda</h2>
+                    <p>
+                      Assim que uma partida for cadastrada ou uma demo for importada, ela aparece aqui como uma publicação.
+                    </p>
+                    <div className="ig-empty-actions">
+                      <Link to="/matches">Ver histórico</Link>
+                      {isAdmin && <Link to="/matches/new">Cadastrar partida</Link>}
+                    </div>
+                  </article>
+                )}
+              </div>
+            </>
+          )}
+        </section>
+
+        <aside className="ig-right-column ef-right-column">
+          <section className="ig-panel ig-profile-panel">
+            <div className="ig-panel-header">
+              <span>Comunidade</span>
+              <strong>{players.length} players</strong>
+            </div>
+            <div className="ig-profile-stats">
+              <MetricChip label="Partidas" value={totalMatches} />
+              <MetricChip label="Ranking" value={ranking.length} />
+            </div>
+          </section>
+
+          <section className="ig-panel">
+            <div className="ig-panel-title-row">
+              <h2>Em alta</h2>
+              <Link to="/metrics">ver tudo</Link>
+            </div>
+
+            {topPlayers.length === 0 ? (
+              <p className="ig-muted-text">O ranking aparece quando houver partidas.</p>
+            ) : (
+              <div className="ig-mini-ranking">
+                {topPlayers.map(entry => (
+                  <button key={entry.player_id} type="button" onClick={() => setSelectedEntry(entry)}>
+                    <span>#{entry.rank}</span>
+                    <Avatar initials={entry.avatar_initials} nickname={entry.player_nickname} size="sm" shape="squircle" />
+                    <strong>{entry.player_nickname}</strong>
+                    <b>{score(entry.score_final)}</b>
+                  </button>
                 ))}
               </div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "1.5px", color: "#334155" }}>
-                SCORE NORMALIZADO MIN-MAX · GRUPO DE {totalPlayers} · CLIQUE EM UM PLAYER PRO DETALHE
+            )}
+          </section>
+
+          <section className="ig-panel">
+            <div className="ig-panel-title-row">
+              <h2>Destaques</h2>
+            </div>
+
+            <div className="ig-highlight-list">
+              <div>
+                <span>🔥 Fragger</span>
+                <strong>{topFrag ? topFrag.player_nickname : "—"}</strong>
               </div>
-            </footer>
-          </>
-        )}
+              <div>
+                <span>💣 ADR</span>
+                <strong>{topAdr ? `${topAdr.player_nickname} · ${number(topAdr.adr)}` : "—"}</strong>
+              </div>
+              <div>
+                <span>🤝 Utility</span>
+                <strong>{topUtility ? topUtility.player_nickname : "—"}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="ig-panel ef-shortcuts-panel">
+            <h2>Acesso rápido</h2>
+            <Link to="/matches">Histórico de partidas</Link>
+            <Link to="/metrics">Ranking completo</Link>
+            <Link to="/sort">Sortear times</Link>
+            {isAdmin && <Link to="/admin">Gestão</Link>}
+          </section>
+        </aside>
       </main>
 
       {selectedEntry && (
-        <PlayerDetailModal entry={selectedEntry} allEntries={ranking} onClose={() => setSelectedEntry(null)} />
+        <PlayerDetailModal
+          entry={selectedEntry}
+          allEntries={ranking}
+          onClose={() => setSelectedEntry(null)}
+        />
       )}
 
       {comparing && (

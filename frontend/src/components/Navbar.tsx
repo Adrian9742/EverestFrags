@@ -1,73 +1,91 @@
-/**
- * Navbar — barra de navegação com abas
- *
- * Abas: RANKING → / | MEU PERFIL → /profile | CHAT → /chat | GESTÃO → /admin (só admin)
- * A aba ativa é detectada via useLocation().
- */
-
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export function Navbar() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { isAdmin } = useAuth();
+function Logo() {
+  return (
+    <Link to="/" className="ig-sidebar-logo" aria-label="EverestFrags">
+      <span className="ig-sidebar-logo-mark">EF</span>
+      <span className="ig-sidebar-logo-text">
+        <strong>EVEREST</strong><b>FRAGS</b>
+      </span>
+    </Link>
+  );
+}
 
-  const tabs = [
-    { label: "RANKING",    path: "/" },
-    { label: "MÉTRICAS",   path: "/metrics" },
-    { label: "MÉDIAS",     path: "/averages" },
-    { label: "SORTEIO",    path: "/sort" },
-    { label: "PARTIDAS",   path: "/matches" },
-    { label: "MEU PERFIL", path: "/profile" },
-    { label: "CHAT",       path: "/chat" },
+export function Navbar() {
+  const { player, isAdmin, logout } = useAuth();
+
+  const mainItems = [
+    { label: "Início", path: "/", icon: "⌂" },
+    { label: "Partidas", path: "/matches", icon: "▶" },
+    { label: "Ranking", path: "/metrics", icon: "★" },
+    { label: "Times", path: "/sort", icon: "⚡" },
+    { label: "Chat", path: "/chat", icon: "●" },
+  ];
+
+  const secondaryItems = [
+    { label: "Médias", path: "/averages", icon: "◇" },
+    ...(player ? [{ label: "Perfil", path: "/profile", icon: "◉" }] : []),
     ...(isAdmin ? [
-      { label: "GESTÃO",  path: "/admin" },
+      { label: "Gestão", path: "/admin", icon: "✎" },
+      { label: "Nova partida", path: "/matches/new", icon: "+" },
     ] : []),
   ];
 
-  function isActive(path: string) {
-    if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
-  }
-
   return (
-    <nav style={{
-      position: "relative",
-      zIndex: 10,
-      borderBottom: "1px solid #151d26",
-      background: "#0a0e13",
-    }}>
-      <div style={{
-        maxWidth: 1320,
-        margin: "0 auto",
-        padding: "0 48px",
-        display: "flex",
-        gap: 4,
-      }}>
-        {tabs.map(tab => (
-          <button
-            key={tab.path}
-            onClick={() => navigate(tab.path)}
-            style={{
-              background: "none",
-              border: "none",
-              borderBottom: `2px solid ${isActive(tab.path) ? "#0e7490" : "transparent"}`,
-              cursor: "pointer",
-              padding: "14px 6px",
-              marginRight: 24,
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 700,
-              fontSize: 15,
-              letterSpacing: "2.5px",
-              color: isActive(tab.path) ? "#22d3ee" : "#566476",
-              transition: "color .15s, border-color .15s",
-            }}
+    <aside className="ig-sidebar" aria-label="Navegação principal">
+      <Logo />
+
+      <nav className="ig-sidebar-nav">
+        {mainItems.map(item => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === "/"}
+            className={({ isActive }) => `ig-sidebar-item ${isActive ? "active" : ""}`}
           >
-            {tab.label}
-          </button>
+            <span className="ig-sidebar-icon">{item.icon}</span>
+            <span className="ig-sidebar-label">{item.label}</span>
+          </NavLink>
         ))}
+      </nav>
+
+      <nav className="ig-sidebar-nav ig-sidebar-secondary">
+        {secondaryItems.map(item => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => `ig-sidebar-item ${isActive ? "active" : ""}`}
+          >
+            <span className="ig-sidebar-icon">{item.icon}</span>
+            <span className="ig-sidebar-label">{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="ig-sidebar-account">
+        {player ? (
+          <>
+            <Link to="/profile" className="ig-account-link">
+              <span className="ig-account-avatar">{player.avatar_initials}</span>
+              <span className="ig-account-text">
+                <strong>{player.nickname}</strong>
+                <small>{isAdmin ? "admin" : "player"}</small>
+              </span>
+            </Link>
+
+            <button type="button" className="ig-logout-button" onClick={logout}>
+              <span className="ig-sidebar-icon">↩</span>
+              <span className="ig-sidebar-label">Sair</span>
+            </button>
+          </>
+        ) : (
+          <Link to="/login" className="ig-login-button">
+            <span className="ig-sidebar-icon">↪</span>
+            <span className="ig-sidebar-label">Entrar</span>
+          </Link>
+        )}
       </div>
-    </nav>
+    </aside>
   );
 }
