@@ -215,7 +215,7 @@ DATABASE_URL=postgresql://user:password@host:5432/everestfrags
 # Auth JWT
 SECRET_KEY=string-aleatoria-muito-longa
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=480   # 8 horas
+ACCESS_TOKEN_EXPIRE_MINUTES=43200   # 30 dias — token vive no localStorage, funciona como "lembrar de mim"
 
 # Steam OpenID + Web API
 STEAM_API_KEY=sua-chave-steam   # steamcommunity.com/dev/apikey
@@ -625,19 +625,24 @@ players / player123
 
 1. Criar **Web Service** apontando para `/backend`
 2. **Build:** `pip install -r requirements.txt`
-3. **Start:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. **Start:** `alembic upgrade head && python seed.py && uvicorn main:app --host 0.0.0.0 --port $PORT`
+   > A ordem importa — `alembic upgrade head` tem que vir ANTES do `seed.py`. O `seed.py` consulta
+   > o model `Player` via ORM, que já espera as colunas da versão atual do código; se a migration
+   > não rodou ainda, a tabela real do banco não tem essas colunas e a consulta quebra
+   > (`column players.X does not exist`). O plano free do Render não tem Shell/SSH/One-off Jobs,
+   > então não tem como rodar esses comandos manualmente uma vez só — ficam embutidos no Start
+   > Command, e são seguros de rodar em todo boot porque ambos são idempotentes.
 4. Criar **PostgreSQL** no Render e copiar a `DATABASE_URL` gerada
 5. Env vars no Render:
    ```
    DATABASE_URL        = (gerado pelo Render)
    SECRET_KEY          = (string aleatória longa — gerar no terminal: openssl rand -hex 32)
    ALGORITHM           = HS256
-   ACCESS_TOKEN_EXPIRE_MINUTES = 480
+   ACCESS_TOKEN_EXPIRE_MINUTES = 43200
    STEAM_API_KEY       = (obter em steamcommunity.com/dev/apikey)
    BACKEND_URL         = https://seu-app.onrender.com
    FRONTEND_URL        = https://seu-app.vercel.app
    ```
-6. Primeiro deploy: rodar `python seed.py` via Shell do Render
 
 ### Frontend — Vercel
 
