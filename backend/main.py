@@ -35,6 +35,8 @@ Rotas de admin:
   POST /api/demo/parse
 """
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -50,14 +52,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS — em produção, substituir pelo domínio real do frontend (Vercel)
+# CORS — FRONTEND_URL (mesma env var usada pelo redirect do Steam OpenID) é
+# sempre liberada, então trocar o domínio do Vercel não exige redeploy do backend.
+_cors_origins = [
+    "http://localhost:5173",   # Vite dev server
+    "http://localhost:4173",   # Vite preview
+]
+_frontend_url = os.getenv("FRONTEND_URL")
+if _frontend_url and _frontend_url not in _cors_origins:
+    _cors_origins.append(_frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",   # Vite dev server
-        "http://localhost:4173",   # Vite preview
-        "https://everestfrags.vercel.app",  # produção (ajustar conforme necessário)
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
