@@ -94,9 +94,8 @@ button {
   z-index: 100;
   width: var(--collapsed);
   padding: 18px 12px;
-  background: rgba(7, 10, 14, 0.9);
+  background: rgba(7, 10, 14, 0.97);
   border-right: 1px solid rgba(148, 163, 184, 0.12);
-  backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
   transition: width 0.22s ease, box-shadow 0.22s ease;
@@ -1454,6 +1453,16 @@ body .ig-page .ig-layout.ef-feed-layout > .ef-right-column {
   padding-right: 2px !important;
 
   z-index: 10 !important;
+}
+
+/* A coluna direita fica fixa sobre o feed que rola por baixo dela —
+   backdrop-filter nesse caso força o navegador a re-borrar o conteúdo
+   atrás a cada frame de scroll. Troca por fundo opaco (mesmo visual,
+   sem o custo de repaint contínuo). */
+body .ig-page .ig-layout.ef-feed-layout > .ig-right-column .ig-panel,
+body .ig-page .ig-layout.ef-feed-layout > .ef-right-column .ig-panel {
+  backdrop-filter: none !important;
+  background: rgba(12, 18, 27, 0.96) !important;
 }
 
 /* Scroll da coluna direita mais discreto */
