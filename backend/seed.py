@@ -71,7 +71,6 @@ def seed():
         if not db.query(Player).filter(Player.nickname == "admin").first():
             admin = Player(
                 nickname="admin",
-                steam_id="76561198874669603",
                 avatar_initials="AD",
                 password_hash=hash_password("fragstack2025"),
                 role="admin",

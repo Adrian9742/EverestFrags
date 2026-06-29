@@ -26,8 +26,11 @@ class Player(Base):
     # Nome de exibição único — usado no login e no ranking
     nickname: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
 
-    # Steam ID opcional — reservado para integração futura com Steam API / awpy
-    steam_id: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    # Steam ID opcional, mas único quando presente — get_or_create_by_steam() depende
+    # disso pra achar sempre a MESMA conta; sem essa constraint, uma duplicata (ex:
+    # seed.py setando esse campo à toa numa conta que não devia ter Steam vinculado)
+    # passa a existir em silêncio e o login via Steam pode resolver pra conta errada.
+    steam_id: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True)
 
     # Iniciais para o avatar gerado (ex: "GB" para GodBR) — fallback quando não há avatar_url
     avatar_initials: Mapped[str] = mapped_column(String(2), nullable=False, default="??")
