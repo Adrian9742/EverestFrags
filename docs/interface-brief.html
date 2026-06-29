@@ -1,0 +1,480 @@
+<title>EverestFrags — Interface Brief</title>
+<meta name="description" content="Resumo visual da interface atual do EverestFrags — identidade, telas, dados disponíveis e espaços para novas ideias.">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #070a0e; --bg-card: #0b0f14; --bg-raised: #0f1419;
+  --border: #1b2530; --border-mid: #232f3e;
+  --teal: #0e7490; --teal-br: #22d3ee; --teal-dim: #041820;
+  --indigo: #6366f1; --indigo-br: #a5b4fc; --indigo-dim: #0c0d2a;
+  --gold: #e0a82e; --gold-br: #fcd34d; --gold-dim: #1a1200;
+  --red: #ef4444; --red-dim: #200a0a;
+  --text: #dde6f0; --text-mid: #7a8fa3; --text-dim: #3d5166;
+  --mono: 'JetBrains Mono','Cascadia Code','Consolas',monospace;
+  --display: 'Barlow Condensed','Arial Narrow',sans-serif;
+  --body: 'Inter',system-ui,sans-serif;
+}
+html { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 14px; line-height: 1.65; }
+body { max-width: 960px; margin: 0 auto; padding: 40px 24px 100px; }
+
+/* ── HERO ── */
+.hero { padding: 48px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 48px; }
+.hero-eye { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--teal); margin-bottom: 14px; }
+.hero-title { font-family: var(--display); font-size: 52px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; line-height: .95; color: #eef3f8; text-wrap: balance; margin-bottom: 20px; }
+.hero-title em { font-style: normal; color: var(--teal-br); }
+.hero-body { font-size: 15px; color: var(--text-mid); max-width: 580px; line-height: 1.7; margin-bottom: 28px; }
+.identity-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.id-chip { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--border-mid); background: var(--bg-card); font-size: 12.5px; color: var(--text-mid); }
+.id-chip .swatch { width: 12px; height: 12px; flex-shrink: 0; }
+.id-chip code { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-left: 4px; }
+
+/* ── SECTION ── */
+.sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.sec-label { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+.sec-rule { flex: 1; height: 1px; background: var(--border); }
+section { margin-bottom: 56px; }
+
+/* ── SCREEN CARDS ── */
+.screen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.screen-card { background: var(--bg-card); border: 1px solid var(--border); padding: 0; overflow: hidden; }
+.screen-card.wide { grid-column: span 2; }
+.screen-top { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
+.screen-mock { padding: 14px 20px 16px; background: var(--bg); min-height: 110px; position: relative; }
+.screen-bottom { padding: 14px 20px; }
+
+.screen-route { font-family: var(--mono); font-size: 11px; color: var(--teal-br); margin-bottom: 6px; }
+.screen-name { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #e3ebf3; }
+.screen-access { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; display: inline-block; padding: 2px 7px; margin-top: 5px; }
+.a-pub  { color: var(--teal);    background: var(--teal-dim);   border: 1px solid #1a3a48; }
+.a-auth { color: var(--indigo-br); background: var(--indigo-dim); border: 1px solid #1e1f4a; }
+.a-adm  { color: var(--gold);    background: var(--gold-dim);   border: 1px solid #3a2a00; }
+
+.screen-desc { font-size: 13px; color: var(--text-mid); line-height: 1.6; margin-bottom: 10px; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border: 1px solid var(--border-mid); color: var(--text-dim); background: var(--bg-raised); }
+.tag.hi { color: var(--teal-br); border-color: #1b3a44; background: #04141a; }
+
+/* Mock UI elements */
+.mock-bar { height: 28px; background: #0d1218; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; padding: 0 10px; margin: -14px -20px 12px; }
+.mock-dot { width: 5px; height: 5px; background: var(--border-mid); }
+.mock-title { font-family: var(--display); font-size: 11px; letter-spacing: .1em; color: var(--text-dim); text-transform: uppercase; }
+.mock-row { height: 20px; background: #0d1218; border-bottom: 1px solid #111820; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+.mock-avatar { width: 14px; height: 14px; background: #1b2530; border: 1px solid #232f3e; flex-shrink: 0; }
+.mock-nick { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .04em; flex: 1; }
+.mock-num { font-family: var(--mono); font-size: 10px; font-variant-numeric: tabular-nums; }
+.mock-podium { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 70px; padding: 0 8px; }
+.mock-pod { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.mock-pod-bar { width: 32px; }
+.mock-pod-label { font-family: var(--mono); font-size: 8px; color: var(--text-dim); margin-top: 3px; }
+.mock-card-row { display: flex; gap: 6px; margin-bottom: 4px; }
+.mock-card { flex: 1; height: 40px; background: #0d1218; border: 1px solid var(--border); }
+.mock-feed-item { height: 36px; background: #0d1218; border: 1px solid #111820; margin-bottom: 2px; display: flex; align-items: center; gap: 10px; padding: 0 10px; }
+.mock-map-tag { font-family: var(--display); font-size: 11px; font-weight: 700; color: var(--text-dim); letter-spacing: .05em; }
+.mock-date { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-left: auto; }
+.mock-pill { height: 14px; width: 40px; background: #1b2530; }
+.mock-sort-left { width: 100px; background: #0d1218; border: 1px solid var(--border); padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; }
+.mock-sort-right { flex: 1; background: #091218; border: 1px solid rgba(14,116,144,.2); padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.mock-sort-team { height: 18px; background: rgba(14,116,144,.08); border: 1px solid rgba(14,116,144,.2); }
+.mock-sort-team2 { height: 18px; background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.2); }
+.mock-check { width: 6px; height: 6px; background: var(--teal); flex-shrink: 0; }
+.mock-radar { width: 60px; height: 60px; border: 1px solid var(--border); position: relative; display: flex; align-items: center; justify-content: center; }
+.mock-stat-col { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.mock-stat-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.mock-stat-bar { height: 3px; background: var(--border-mid); flex: 1; }
+.mock-stat-fill { height: 100%; }
+
+/* ── DATA INVENTORY ── */
+.data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.data-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px 18px; }
+.data-card-title { font-family: var(--display); font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.dc-combat  .data-card-title { color: var(--teal-br); }
+.dc-duel    .data-card-title { color: var(--indigo-br); }
+.dc-utility .data-card-title { color: var(--gold-br); }
+.dc-player  .data-card-title { color: var(--text-mid); }
+.dc-match   .data-card-title { color: var(--text-mid); }
+.dc-system  .data-card-title { color: var(--text-mid); }
+.data-metric { font-family: var(--mono); font-size: 11px; color: var(--text-mid); padding: 3px 0; border-bottom: 1px solid #111820; display: flex; justify-content: space-between; align-items: center; }
+.data-metric:last-child { border-bottom: none; }
+.data-metric .tag-inv { font-size: 9px; color: #f87171; }
+
+/* ── IDEAS ── */
+.ideas-note { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--gold); padding: 18px 20px; margin-bottom: 3px; font-size: 13.5px; color: var(--text-mid); line-height: 1.65; }
+.ideas-note strong { color: var(--text); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .screen-grid { grid-template-columns: 1fr; }
+  .screen-card.wide { grid-column: span 1; }
+  .data-grid { grid-template-columns: 1fr 1fr; }
+  .hero-title { font-size: 36px; }
+}
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eye">Interface Brief · EverestFrags</div>
+  <h1 class="hero-title">CS2 Squad<br><em>Tracker</em></h1>
+  <p class="hero-body">Sistema web para um grupo de amigos que joga CS2 juntos. Registra partidas, calcula ranking por performance real e sorteia times equilibrados. Identidade visual tática e densa em dados — estética de terminal de análise.</p>
+  <div class="identity-chips">
+    <div class="id-chip"><div class="swatch" style="background:#070a0e;border:1px solid #1b2530"></div>Fundo <code>#070a0e</code></div>
+    <div class="id-chip"><div class="swatch" style="background:#0e7490"></div>Teal <code>#0e7490</code></div>
+    <div class="id-chip"><div class="swatch" style="background:#6366f1"></div>Indigo <code>#6366f1</code></div>
+    <div class="id-chip"><div class="swatch" style="background:#e0a82e"></div>Ouro <code>#e0a82e</code></div>
+    <div class="id-chip" style="padding-left:10px">Barlow Condensed <span style="color:var(--text-dim);font-family:var(--mono);font-size:10px;margin-left:6px">display</span></div>
+    <div class="id-chip" style="padding-left:10px">JetBrains Mono <span style="color:var(--text-dim);font-family:var(--mono);font-size:10px;margin-left:6px">dados</span></div>
+    <div class="id-chip" style="padding-left:10px">Inter <span style="color:var(--text-dim);font-family:var(--mono);font-size:10px;margin-left:6px">corpo</span></div>
+  </div>
+</div>
+
+<!-- TELAS -->
+<section>
+  <div class="sec-head"><span class="sec-label">Telas atuais</span><span class="sec-rule"></span></div>
+  <div class="screen-grid">
+
+    <!-- Dashboard -->
+    <div class="screen-card wide">
+      <div class="screen-top">
+        <div class="screen-route">/</div>
+        <div class="screen-name">Dashboard</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">EVERESTFRAGS</div></div>
+        <div class="mock-card-row">
+          <div class="mock-card"></div>
+          <div class="mock-card"></div>
+          <div class="mock-card"></div>
+        </div>
+        <div class="mock-feed-item"><div class="mock-map-tag">DUST2</div><div class="mock-pill"></div><div class="mock-date">28/06</div></div>
+        <div class="mock-feed-item"><div class="mock-map-tag">MIRAGE</div><div class="mock-pill"></div><div class="mock-date">25/06</div></div>
+        <div class="mock-feed-item"><div class="mock-map-tag">INFERNO</div><div class="mock-pill"></div><div class="mock-date">22/06</div></div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Primeira tela que o usuário vê. Mostra um pódio dos 3 melhores do ranking e um feed das partidas mais recentes com mapa, data e quantidade de players. Clicar em uma partida abre os detalhes.</p>
+        <div class="tag-row"><span class="tag hi">pódio top-3</span><span class="tag hi">feed de partidas</span><span class="tag">modal de detalhe do player</span><span class="tag">radar chart no modal</span></div>
+      </div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/ranking</div>
+        <div class="screen-name">Ranking</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">RANKING</div></div>
+        <div class="mock-podium">
+          <div class="mock-pod"><div class="mock-pod-bar" style="height:42px;background:rgba(99,102,241,.3);border:1px solid rgba(99,102,241,.4)"></div><div class="mock-pod-label">2°</div></div>
+          <div class="mock-pod"><div class="mock-pod-bar" style="height:62px;background:rgba(224,168,46,.3);border:1px solid rgba(224,168,46,.5)"></div><div class="mock-pod-label">1°</div></div>
+          <div class="mock-pod"><div class="mock-pod-bar" style="height:30px;background:rgba(14,116,144,.2);border:1px solid rgba(14,116,144,.3)"></div><div class="mock-pod-label">3°</div></div>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px">
+          <div class="mock-row"><div class="mock-avatar"></div><div class="mock-nick" style="color:#9ca3af">4°</div><div class="mock-num" style="color:var(--teal-br)">87</div></div>
+          <div class="mock-row"><div class="mock-avatar"></div><div class="mock-nick" style="color:#9ca3af">5°</div><div class="mock-num" style="color:var(--teal-br)">81</div></div>
+        </div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Pódio animado dos 3 primeiros + lista completa com score final (0–100), K/D ratio e partidas. Clicar em qualquer player abre modal com radar chart de combate/duelo/utility e todas as métricas.</p>
+        <div class="tag-row"><span class="tag hi">score 0–100</span><span class="tag hi">radar chart</span><span class="tag">comparar 2 players</span><span class="tag">filtro por partidas mínimas</span></div>
+      </div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/metrics</div>
+        <div class="screen-name">Métricas</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">MÉTRICAS</div></div>
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <div style="height:18px;padding:0 8px;background:rgba(14,116,144,.15);border:1px solid rgba(14,116,144,.3);font-family:var(--mono);font-size:9px;color:var(--teal-br);display:flex;align-items:center;letter-spacing:.06em">COMBATE</div>
+          <div style="height:18px;padding:0 8px;background:transparent;border:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--text-dim);display:flex;align-items:center;letter-spacing:.06em">DUELOS</div>
+          <div style="height:18px;padding:0 8px;background:transparent;border:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--text-dim);display:flex;align-items:center;letter-spacing:.06em">UTILITY</div>
+        </div>
+        <div class="mock-row"><div class="mock-avatar"></div><div class="mock-nick" style="color:#ccc;font-size:13px">GodBR</div><div class="mock-num" style="color:var(--teal-br);font-size:12px">847</div></div>
+        <div class="mock-row"><div class="mock-avatar"></div><div class="mock-nick" style="color:#888;font-size:13px">Kaz</div><div class="mock-num" style="color:#5a7a88;font-size:12px">721</div></div>
+        <div class="mock-row"><div class="mock-avatar"></div><div class="mock-nick" style="color:#888;font-size:13px">Ruxin</div><div class="mock-num" style="color:#5a7a88;font-size:12px">698</div></div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Leaderboard por métrica individual. Escolha entre 20 métricas (kills, ADR, opening kills, grenade damage…) agrupadas em 3 categorias. Mostra quem lidera em cada aspecto específico do jogo.</p>
+        <div class="tag-row"><span class="tag hi">20 métricas</span><span class="tag">3 categorias</span><span class="tag">modal de detalhe</span></div>
+      </div>
+    </div>
+
+    <!-- Partidas -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/matches</div>
+        <div class="screen-name">Partidas</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">PARTIDAS</div></div>
+        <div style="display:grid;grid-template-columns:40px 80px 1fr 40px;gap:6px;padding:4px 0;border-bottom:1px solid #111820;margin-bottom:4px">
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);letter-spacing:.1em">#</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);letter-spacing:.1em">DATA</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);letter-spacing:.1em">MAPA</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);letter-spacing:.1em">PLR</span>
+        </div>
+        <div style="display:grid;grid-template-columns:40px 80px 1fr 40px;gap:6px;padding:5px 0;border-bottom:1px solid #0d1218">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">#42</span>
+          <span style="font-family:var(--mono);font-size:9px;color:#666">28/06</span>
+          <span style="font-family:var(--display);font-size:12px;font-weight:700;color:#aaa">DUST2</span>
+          <span style="font-family:var(--mono);font-size:9px;color:#666;text-align:center">8</span>
+        </div>
+        <div style="display:grid;grid-template-columns:40px 80px 1fr 40px;gap:6px;padding:5px 0;border-bottom:1px solid #0d1218">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">#41</span>
+          <span style="font-family:var(--mono);font-size:9px;color:#666">25/06</span>
+          <span style="font-family:var(--display);font-size:12px;font-weight:700;color:#aaa">MIRAGE</span>
+          <span style="font-family:var(--mono);font-size:9px;color:#666;text-align:center">10</span>
+        </div>
+        <div style="display:grid;grid-template-columns:40px 80px 1fr 40px;gap:6px;padding:5px 0">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">#40</span>
+          <span style="font-family:var(--mono);font-size:9px;color:#666">22/06</span>
+          <span style="font-family:var(--display);font-size:12px;font-weight:700;color:#aaa">INFERNO</span>
+          <span style="font-family:var(--mono);font-size:9px;color:#666;text-align:center">9</span>
+        </div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Histórico paginado de todas as partidas — 20 por página. Cada linha mostra mapa, data, número de players e link para scope.gg. Clicar entra no detalhe com stats individuais.</p>
+        <div class="tag-row"><span class="tag hi">paginação</span><span class="tag">link scope.gg</span><span class="tag">admin: deletar</span></div>
+      </div>
+    </div>
+
+    <!-- Detalhe partida -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/matches/:id</div>
+        <div class="screen-name">Detalhe da Partida</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">DUST2 · 28/06</div></div>
+        <div style="display:grid;grid-template-columns:1fr repeat(5,28px);gap:4px;font-family:var(--mono);font-size:8px;color:var(--text-dim);padding:4px 0;letter-spacing:.08em;margin-bottom:4px">
+          <span>PLAYER</span><span style="text-align:center">K</span><span style="text-align:center">D</span><span style="text-align:center">A</span><span style="text-align:center">ADR</span><span style="text-align:center">RTG</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr repeat(5,28px);gap:4px;padding:4px 0;border-bottom:1px solid #0d1218;align-items:center">
+          <span style="font-family:var(--display);font-size:12px;font-weight:700;color:#d0d0d0">GodBR</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#ccc">24</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#ccc">14</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#ccc">5</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#888">92</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:var(--teal-br);font-weight:700">1.47</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr repeat(5,28px);gap:4px;padding:4px 0;border-bottom:1px solid #0d1218;align-items:center">
+          <span style="font-family:var(--display);font-size:12px;font-weight:700;color:#888">Kaz</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#888">18</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#888">17</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#888">7</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#555">78</span>
+          <span style="font-family:var(--mono);font-size:10px;text-align:center;color:#5a7a88;font-weight:700">1.12</span>
+        </div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Stats da partida por player, ordenadas por HLTV Rating. Mostra K/D/A, diferencial +/-, ADR e Rating. Link para scope.gg e notas da partida se existirem.</p>
+        <div class="tag-row"><span class="tag hi">K/D/A · ADR · Rating</span><span class="tag">diferencial +/-</span><span class="tag">scope.gg</span></div>
+      </div>
+    </div>
+
+    <!-- Sortear Times -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/sort</div>
+        <div class="screen-name">Sortear Times</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">SORTEAR TIMES</div></div>
+        <div style="display:flex;gap:8px">
+          <div class="mock-sort-left">
+            <div style="display:flex;align-items:center;gap:4px"><div class="mock-check"></div><span style="font-family:var(--display);font-size:11px;color:#aaa">GodBR</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><div class="mock-check"></div><span style="font-family:var(--display);font-size:11px;color:#aaa">Kaz</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><div class="mock-check" style="background:var(--border)"></div><span style="font-family:var(--display);font-size:11px;color:#555">Ruxin</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><div class="mock-check"></div><span style="font-family:var(--display);font-size:11px;color:#aaa">Preto</span></div>
+          </div>
+          <div class="mock-sort-right">
+            <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--teal);letter-spacing:.08em;margin-bottom:3px">TIME 1</div>
+            <div class="mock-sort-team"></div>
+            <div class="mock-sort-team"></div>
+            <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--indigo-br);letter-spacing:.08em;margin:5px 0 3px">TIME 2</div>
+            <div class="mock-sort-team2"></div>
+            <div class="mock-sort-team2"></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Seleciona quem está presente, escolhe 2 ou 3 times. Algoritmo Snake Draft distribui por score_final. Mostra diferença de score entre os times, avisa se ficou desbalanceado. Resultado copiável para Discord.</p>
+        <div class="tag-row"><span class="tag hi">snake draft</span><span class="tag">2 ou 3 times</span><span class="tag hi">copiar para Discord</span><span class="tag">diferença de score</span></div>
+      </div>
+    </div>
+
+    <!-- Médias -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/averages</div>
+        <div class="screen-name">Médias do Grupo</div>
+        <span class="screen-access a-pub">Público</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">MÉDIAS</div></div>
+        <div style="display:flex;gap:8px">
+          <div class="mock-stat-col">
+            <div style="font-family:var(--mono);font-size:8px;color:var(--teal);letter-spacing:.1em;margin-bottom:4px">COMBATE</div>
+            <div class="mock-stat-bar-wrap"><span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);min-width:36px">KILLS</span><div class="mock-stat-bar"><div class="mock-stat-fill" style="width:72%;background:var(--teal)"></div></div><span style="font-family:var(--mono);font-size:9px;color:var(--teal-br)">18.3</span></div>
+            <div class="mock-stat-bar-wrap"><span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);min-width:36px">ADR</span><div class="mock-stat-bar"><div class="mock-stat-fill" style="width:60%;background:var(--teal)"></div></div><span style="font-family:var(--mono);font-size:9px;color:var(--teal-br)">77.4</span></div>
+            <div class="mock-stat-bar-wrap"><span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);min-width:36px">RTG</span><div class="mock-stat-bar"><div class="mock-stat-fill" style="width:55%;background:var(--teal)"></div></div><span style="font-family:var(--mono);font-size:9px;color:var(--teal-br)">1.02</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Um número único por métrica representando a média de todo o grupo em todas as partidas — não por jogador, mas por linha de stats. Separado em Combate, Duelos e Utility.</p>
+        <div class="tag-row"><span class="tag">média geral do grupo</span><span class="tag">3 categorias</span></div>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/profile</div>
+        <div class="screen-name">Perfil</div>
+        <span class="screen-access a-auth">Autenticado</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">PERFIL</div></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:36px;height:36px;background:#0d1218;border:1px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--teal-br)">GB</div>
+          <div><div style="font-family:var(--display);font-size:15px;font-weight:700;color:#d0d0d0">GodBR</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">viewer</div></div>
+        </div>
+        <div style="height:22px;background:#0d1218;border:1px solid var(--border);margin-bottom:4px"></div>
+        <div style="height:22px;background:#0d1218;border:1px solid var(--border)"></div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Editar apelido de exibição (separado do nick da Steam), URL de foto de perfil e trocar senha. Requer a senha atual para confirmar qualquer troca.</p>
+        <div class="tag-row"><span class="tag hi">apelido editável</span><span class="tag hi">foto de perfil</span><span class="tag">trocar senha</span></div>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="screen-card">
+      <div class="screen-top">
+        <div class="screen-route">/admin · /matches/new</div>
+        <div class="screen-name">Administração</div>
+        <span class="screen-access a-adm">Admin</span>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-bar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-title">ADMIN</div></div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="height:26px;background:#0d1218;border:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 8px">
+            <div class="mock-avatar"></div><span style="font-family:var(--display);font-size:12px;font-weight:700;color:#aaa">GodBR</span><span style="font-family:var(--mono);font-size:8px;color:var(--gold);margin-left:auto">ADMIN</span>
+          </div>
+          <div style="height:26px;background:#0d1218;border:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 8px">
+            <div class="mock-avatar"></div><span style="font-family:var(--display);font-size:12px;font-weight:700;color:#aaa">Kaz</span><span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);margin-left:auto">viewer</span>
+          </div>
+          <div style="height:26px;background:#0d1218;border:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 8px">
+            <div class="mock-avatar"></div><span style="font-family:var(--display);font-size:12px;font-weight:700;color:#aaa">Ruxin</span><span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);margin-left:auto">viewer</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-bottom">
+        <p class="screen-desc">Gestão de players (criar, editar role, ativar/desativar) e criação de partidas — seja por upload de arquivo .dem do CS2 (extração automática de stats) ou preenchimento manual.</p>
+        <div class="tag-row"><span class="tag hi">criar player</span><span class="tag hi">upload .dem</span><span class="tag">lookup Steam</span><span class="tag">roles</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- DADOS DISPONÍVEIS -->
+<section>
+  <div class="sec-head"><span class="sec-label">Dados disponíveis</span><span class="sec-rule"></span></div>
+  <div style="font-size:13px;color:var(--text-mid);margin-bottom:18px;max-width:560px">Tudo isso já está sendo rastreado por partida por player. Qualquer nova tela pode usar esses dados sem precisar de nova integração.</div>
+  <div class="data-grid">
+
+    <div class="data-card dc-combat">
+      <div class="data-card-title">Combate</div>
+      <div class="data-metric">kills</div>
+      <div class="data-metric">deaths <span class="tag-inv">↓ inv</span></div>
+      <div class="data-metric">assists</div>
+      <div class="data-metric">damage_total</div>
+      <div class="data-metric">adr</div>
+      <div class="data-metric">adr_difference</div>
+      <div class="data-metric">hltv_rating</div>
+      <div class="data-metric">kast_percent</div>
+      <div class="data-metric">advantage_kills</div>
+      <div class="data-metric">disadvantage_kills</div>
+      <div class="data-metric">eco_kills</div>
+    </div>
+
+    <div class="data-card dc-duel">
+      <div class="data-card-title">Duelos</div>
+      <div class="data-metric">opening_kills</div>
+      <div class="data-metric">trade_kills</div>
+      <div class="data-metric">trade_denials</div>
+      <div class="data-metric">time_to_kill_ms <span class="tag-inv">↓ inv</span></div>
+    </div>
+
+    <div class="data-card dc-utility">
+      <div class="data-card-title">Utility</div>
+      <div class="data-metric">flash_assists</div>
+      <div class="data-metric">grenade_damage</div>
+      <div class="data-metric">he_enemies_hit</div>
+      <div class="data-metric">fire_enemies_hit</div>
+      <div class="data-metric">fire_damage</div>
+    </div>
+
+    <div class="data-card dc-player">
+      <div class="data-card-title">Por Player</div>
+      <div class="data-metric">nickname</div>
+      <div class="data-metric">display_name</div>
+      <div class="data-metric">steam_id</div>
+      <div class="data-metric">avatar_url</div>
+      <div class="data-metric">role (admin/viewer)</div>
+      <div class="data-metric">score_combat</div>
+      <div class="data-metric">score_duel</div>
+      <div class="data-metric">score_utility</div>
+      <div class="data-metric">score_final</div>
+      <div class="data-metric">total_matches</div>
+    </div>
+
+    <div class="data-card dc-match">
+      <div class="data-card-title">Por Partida</div>
+      <div class="data-metric">map_name</div>
+      <div class="data-metric">played_at</div>
+      <div class="data-metric">scope_url</div>
+      <div class="data-metric">notes</div>
+      <div class="data-metric">player_count</div>
+      <div class="data-metric">stats de cada player</div>
+    </div>
+
+    <div class="data-card dc-system">
+      <div class="data-card-title">Head-to-Head</div>
+      <div class="data-metric">kills entre 2 players</div>
+      <div class="data-metric">flash_assists entre 2</div>
+      <div class="data-metric">total de partidas juntos</div>
+      <div style="margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.6">Dados acumulados de todos os confrontos diretos entre qualquer par de players.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ESPAÇOS PARA IDEIAS -->
+<section>
+  <div class="sec-head"><span class="sec-label">Espaços em aberto</span><span class="sec-rule"></span></div>
+  <div style="font-size:13px;color:var(--text-mid);margin-bottom:18px;max-width:560px">Áreas do sistema que existem mas poderiam ser expandidas, ou que os dados suportam mas ainda não têm tela.</div>
+
+  <div class="ideas-note"><strong>Chat (/chat)</strong> — existe a infra de WebSocket e histórico de 50 mensagens, mas a tela é um placeholder. Pode virar um chat de sessão com contexto das partidas, reações, notificações de novas partidas ou até integração com o sorteio.</div>
+
+  <div class="ideas-note"><strong>Head-to-head</strong> — a API já calcula quem mais matou quem e quem mais flashou quem em todas as partidas juntos, mas não existe página dedicada. Poderia ser uma tela de rivalidades do grupo.</div>
+
+  <div class="ideas-note"><strong>Histórico individual</strong> — cada player tem stats consolidadas, mas não existe uma tela de evolução ao longo do tempo — como o score, ADR e Rating foram mudando partida a partida.</div>
+
+  <div class="ideas-note"><strong>Mapas</strong> — o mapa de cada partida é registrado. Não existe análise de performance por mapa — qual o melhor mapa do grupo, qual player performa melhor em qual mapa.</div>
+
+  <div class="ideas-note"><strong>Sessão do dia</strong> — não existe conceito de "sessão" (várias partidas na mesma noite). O sorteio é stateless. Poderia ter um modo de sessão que agrupa partidas e mantém o placar da noite.</div>
+
+  <div class="ideas-note"><strong>Conquistas / marcos</strong> — os dados suportam milestones (primeira vez com rating acima de 1.5, série de 3 partidas acima da média, etc.) mas não existe esse sistema ainda.</div>
+</section>
