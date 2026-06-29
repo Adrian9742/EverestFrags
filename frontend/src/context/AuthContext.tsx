@@ -43,10 +43,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return Promise.reject(new Error("unauthorized"));
       })
       .then((data: PlayerPublic) => {
+        // Se o token mudou enquanto essa checagem estava em voo (ex: o
+        // redirect de callback da Steam terminou de logar com um token
+        // novo antes desta resposta chegar), não pisa no login mais recente.
+        if (localStorage.getItem("ef_token") !== token) return;
         localStorage.setItem("ef_player", JSON.stringify(data));
         setPlayer(data);
       })
       .catch(() => {
+        if (localStorage.getItem("ef_token") !== token) return;
         localStorage.removeItem("ef_token");
         localStorage.removeItem("ef_player");
         setPlayer(null);
