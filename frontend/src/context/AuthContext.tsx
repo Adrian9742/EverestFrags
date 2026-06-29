@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         localStorage.removeItem("ef_token");
         localStorage.removeItem("ef_player");
+        setPlayer(null);
       })
       .finally(() => setIsLoading(false));
   }, []);
