@@ -157,6 +157,76 @@ xp_total = xp_base + xp_bonus - xp_penalty
 
 ---
 
+## 7. Sistema de Vitórias (paralelo ao ranking de performance)
+
+Aba separada `/wins` ou tab dentro do `/ranking`. **Não influencia o score atual** — é um placar paralelo baseado puramente em resultado de partida.
+
+### Problema atual
+O sistema registra stats individuais, mas não guarda qual time ganhou nem quem estava em cada time. O sorteio distribui os times mas o resultado some depois.
+
+### O que precisa ser adicionado no banco
+```sql
+-- Novos campos na tabela matches
+team_1_player_ids  INTEGER[]   -- ids dos players do Time 1
+team_2_player_ids  INTEGER[]   -- ids dos players do Time 2
+winning_team       INTEGER     -- 1 ou 2 (null se não registrado)
+
+-- Nova tabela de pontuação por vitórias
+player_wins (
+  player_id   INTEGER FK,
+  wins        INTEGER DEFAULT 0,
+  losses      INTEGER DEFAULT 0,
+  win_streak  INTEGER DEFAULT 0,
+  points      INTEGER DEFAULT 0
+)
+```
+
+### Fórmula de pontos
+```
+Vitória normal:                    +3 pts
+Derrota:                           -1 pt
+Vitória sendo time azarão*:        +5 pts
+Sequência de 3+ vitórias (streak): badge visual
+```
+*azarão = time com score médio inferior ao adversário no momento do sorteio
+
+### Interface — aba "Placar"
+```
+PLACAR DA TEMPORADA
+
+1° Ciclano    V:12  D:5   WR:70%  🔥 3 seguidas   42 pts
+2° GodBR      V:9   D:6   WR:60%                   21 pts
+3° Fresh      V:10  D:7   WR:59%                   23 pts
+4° Kaz        V:8   D:9   WR:47%                    15 pts
+```
+
+### Fluxo de registro
+1. Admin sorteia os times no `/sort` (já existe)
+2. Após a partida, admin clica em "Registrar resultado" no `/sort` ou no detalhe da partida
+3. Seleciona qual time ganhou (Time 1 ou Time 2)
+4. Sistema atualiza wins/losses/points de cada player automaticamente
+
+### Novos endpoints necessários
+```
+POST /api/matches/{id}/result      — registrar resultado (admin)
+GET  /api/wins/ranking             — placar de vitórias
+GET  /api/players/{id}/wins        — histórico de vitórias do player
+```
+
+---
+
+## Implementação — Ordem Sugerida (atualizada)
+
+1. **Export planilha** — menor risco, sem dependência de IA, entrega imediata
+2. **Sistema de vitórias** — requer migração no banco, mas agrega muito valor social
+3. **Coach individual** — maior valor percebido, endpoint simples
+4. **Sistema de XP** — requer migração no banco (nova coluna `xp_total`)
+5. **Narrativa da partida** — dispara junto com o analista pós-partida existente
+6. **Previsão pré-sessão** — depende dos dados de forma recente
+7. **Digest semanal** — último, pois depende do webhook Discord estar configurado
+
+---
+
 ## Dependências a instalar
 
 ```bash
