@@ -358,17 +358,56 @@ export function AddMatch() {
           </div>
         )}
 
-        {/* Times detectados pelo demo */}
+        {/* Placar dos times detectados pelo demo */}
         {demoTeamWinner != null && demoTeamAScore != null && demoTeamBScore != null && (
-          <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: "1px" }}>
-            <div style={{ padding: "8px 18px", borderRadius: 12, border: `2px solid ${demoTeamWinner === "A" ? "#22d3ee" : "rgba(34,211,238,0.25)"}`, background: demoTeamWinner === "A" ? "rgba(34,211,238,0.10)" : "rgba(255,255,255,0.03)", color: demoTeamWinner === "A" ? "#22d3ee" : "#7b8798" }}>
-              TIME A {demoTeamWinner === "A" && "✓"} · {demoTeamAScore}
+          <div style={{ display: "flex", alignItems: "stretch", gap: 0, marginBottom: 20, borderRadius: 16, overflow: "hidden", border: "1px solid #1b2530" }}>
+            {/* Time A */}
+            <div style={{
+              flex: 1, padding: "18px 24px",
+              background: demoTeamWinner === "A" ? "rgba(14,116,144,0.18)" : "rgba(255,255,255,0.02)",
+              borderRight: "1px solid #1b2530",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#0e7490", marginBottom: 4 }}>
+                  TIME A {demoTeamWinner === "A" ? "· VENCEDOR" : ""}
+                </div>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 52, fontWeight: 900, lineHeight: 1, color: demoTeamWinner === "A" ? "#22d3ee" : "#3a4757" }}>
+                  {demoTeamAScore}
+                </div>
+              </div>
+              {demoTeamWinner === "A" && (
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, color: "#22d3ee", opacity: 0.6 }}>✓</div>
+              )}
             </div>
-            <span style={{ color: "#3a4757", fontSize: 13 }}>vs</span>
-            <div style={{ padding: "8px 18px", borderRadius: 12, border: `2px solid ${demoTeamWinner === "B" ? "#e0a82e" : "rgba(224,168,46,0.2)"}`, background: demoTeamWinner === "B" ? "rgba(224,168,46,0.08)" : "rgba(255,255,255,0.03)", color: demoTeamWinner === "B" ? "#e0a82e" : "#7b8798" }}>
-              TIME B {demoTeamWinner === "B" && "✓"} · {demoTeamBScore}
+            {/* VS */}
+            <div style={{
+              width: 56, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "#080c11",
+              fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 700,
+              letterSpacing: "2px", color: "#2a3a4a",
+            }}>
+              {demoTeamWinner === "tie" ? "EMP" : "VS"}
             </div>
-            {demoTeamWinner === "tie" && <span style={{ color: "#7b8798", fontSize: 12 }}>empate</span>}
+            {/* Time B */}
+            <div style={{
+              flex: 1, padding: "18px 24px",
+              background: demoTeamWinner === "B" ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.02)",
+              borderLeft: "1px solid #1b2530",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              {demoTeamWinner === "B" && (
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, color: "#6366f1", opacity: 0.6 }}>✓</div>
+              )}
+              <div style={{ textAlign: "right", flex: 1 }}>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#6366f1", marginBottom: 4 }}>
+                  {demoTeamWinner === "B" ? "VENCEDOR · " : ""}TIME B
+                </div>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 52, fontWeight: 900, lineHeight: 1, color: demoTeamWinner === "B" ? "#818cf8" : "#3a4757" }}>
+                  {demoTeamBScore}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -402,76 +441,142 @@ export function AddMatch() {
           </div>
         </div>
 
-        {/* Tabela de stats */}
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1200 }}>
-            <thead>
-              <tr style={{ background: "#101010", borderBottom: "1px solid #1c1c1c" }}>
-                <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, letterSpacing: "2px", color: "#5a5a5a", fontWeight: 400 }}>✓</th>
-                <th style={{ padding: "8px 6px", textAlign: "center", fontSize: 9, letterSpacing: "2px", color: "#5a5a5a", fontWeight: 400 }}>T</th>
-                <th style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, letterSpacing: "2px", color: "#5a5a5a", fontWeight: 400 }}>PLAYER</th>
-                {STAT_COLS.map(c => (
-                  <th key={c.key} style={{ padding: "8px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>
-                    {c.label}
-                  </th>
-                ))}
+        {/* Tabela de stats — agrupada por time quando há dados de time */}
+        {(() => {
+          const hasTeams = rows.some(r => r.team === "A") && rows.some(r => r.team === "B");
+          const indexed = rows.map((row, idx) => ({ row, idx }));
+          const teamA    = indexed.filter(({ row }) => row.team === "A" && row.selected);
+          const teamB    = indexed.filter(({ row }) => row.team === "B" && row.selected);
+          const noTeam   = indexed.filter(({ row }) => !row.team || (!row.selected && row.team !== "A" && row.team !== "B"));
+          // Players sem time mas selecionados (edge case)
+          const orphans  = indexed.filter(({ row }) => !row.team && row.selected);
+          const display  = hasTeams ? [...teamA, ...teamB, ...noTeam, ...orphans] : indexed;
+
+          const thStyle = { padding: "9px 8px", textAlign: "center" as const, fontSize: 9, letterSpacing: "2px", color: "#3a4757", fontWeight: 400 };
+
+          function TeamSeparator({ team }: { team: "A" | "B" }) {
+            const isA = team === "A";
+            const color = isA ? "#0e7490" : "#6366f1";
+            const bg    = isA ? "rgba(14,116,144,0.08)" : "rgba(99,102,241,0.08)";
+            const border = isA ? "rgba(14,116,144,0.35)" : "rgba(99,102,241,0.35)";
+            const count = isA ? teamA.length : teamB.length;
+            const cols  = STAT_COLS.length + 3;
+            return (
+              <tr style={{ background: bg, borderTop: `2px solid ${border}`, borderBottom: `1px solid ${border}` }}>
+                <td colSpan={cols} style={{ padding: "8px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 11, letterSpacing: "3px", color }}>
+                      TIME {team}
+                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: color + "80" }}>
+                      {count} jogador{count !== 1 ? "es" : ""}
+                    </span>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, idx) => {
-                const player = players.find(p => p.id === row.player_id);
-                return (
-                  <tr
-                    key={row.player_id}
-                    style={{ borderBottom: "1px solid #111", background: row.selected ? "#0d0d0d" : "transparent", opacity: row.selected ? 1 : 0.5 }}
-                  >
-                    <td style={{ padding: "6px 12px" }}>
-                      <input type="checkbox" checked={row.selected} onChange={() => toggleRow(idx)} style={{ accentColor: "#0e7490", cursor: "pointer" }} />
-                    </td>
-                    <td style={{ padding: "6px 6px", textAlign: "center" }}>
-                      {row.team && (
-                        <span style={{
-                          display: "inline-block", padding: "2px 7px", borderRadius: 6,
-                          fontSize: 10, fontWeight: 800, letterSpacing: "1px",
-                          background: row.team === "A" ? "rgba(34,211,238,0.12)" : "rgba(224,168,46,0.12)",
-                          color: row.team === "A" ? "#22d3ee" : "#e0a82e",
-                          border: `1px solid ${row.team === "A" ? "rgba(34,211,238,0.3)" : "rgba(224,168,46,0.3)"}`,
-                        }}>
-                          {row.team}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: "6px 12px" }}>
-                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 600, color: "#d0d0d0" }}>
-                        {player?.nickname}
-                      </div>
-                    </td>
+            );
+          }
+
+          return (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1200 }}>
+                <thead>
+                  <tr style={{ background: "#0a0e14", borderBottom: "1px solid #1b2530" }}>
+                    <th style={{ ...thStyle, textAlign: "left", padding: "9px 12px" }}>✓</th>
+                    <th style={thStyle}>T</th>
+                    <th style={{ ...thStyle, textAlign: "left", padding: "9px 12px" }}>PLAYER</th>
                     {STAT_COLS.map(c => (
-                      <td key={c.key} style={{ padding: "4px 4px" }}>
-                        <input
-                          type="number"
-                          value={row[c.key] as number}
-                          min={c.min}
-                          max={c.max}
-                          step={c.step}
-                          disabled={!row.selected}
-                          onChange={e => updateStat(idx, c.key, parseFloat(e.target.value) || 0)}
-                          style={{
-                            width: "100%", background: row.selected ? "#0a0a0a" : "#070707",
-                            border: "1px solid #1a1a1a", color: row.selected ? "#e8e8e8" : "#444",
-                            fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
-                            padding: "5px 6px", outline: "none", textAlign: "center",
-                            minWidth: 60,
-                          }}
-                        />
-                      </td>
+                      <th key={c.key} style={thStyle}>{c.label}</th>
                     ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {display.map(({ row, idx }, displayIdx) => {
+                    const player = players.find(p => p.id === row.player_id);
+                    const isA    = row.team === "A";
+                    const isB    = row.team === "B";
+                    const rowAccent = isA ? "rgba(14,116,144,0.06)" : isB ? "rgba(99,102,241,0.06)" : "transparent";
+                    const rowBg    = row.selected ? (row.team ? rowAccent : "#0b0f14") : "transparent";
+
+                    // Inserir separador antes do primeiro de cada time
+                    const prevRow  = display[displayIdx - 1]?.row;
+                    const needsSepA = hasTeams && isA && prevRow?.team !== "A";
+                    const needsSepB = hasTeams && isB && prevRow?.team !== "B";
+
+                    return (
+                      <>
+                        {needsSepA && <TeamSeparator key={`sep-a`} team="A" />}
+                        {needsSepB && <TeamSeparator key={`sep-b`} team="B" />}
+                        <tr
+                          key={row.player_id}
+                          style={{
+                            borderBottom: "1px solid #0f1520",
+                            background: rowBg,
+                            opacity: row.selected ? 1 : 0.4,
+                          }}
+                        >
+                          <td style={{ padding: "6px 12px" }}>
+                            <input
+                              type="checkbox"
+                              checked={row.selected}
+                              onChange={() => toggleRow(idx)}
+                              style={{ accentColor: "#0e7490", cursor: "pointer" }}
+                            />
+                          </td>
+                          <td style={{ padding: "6px 6px", textAlign: "center" }}>
+                            {row.team && (
+                              <span style={{
+                                display: "inline-block", padding: "2px 7px", borderRadius: 5,
+                                fontSize: 10, fontWeight: 800, letterSpacing: "1px",
+                                background: isA ? "rgba(14,116,144,0.18)" : "rgba(99,102,241,0.18)",
+                                color: isA ? "#22d3ee" : "#818cf8",
+                                border: `1px solid ${isA ? "rgba(14,116,144,0.4)" : "rgba(99,102,241,0.4)"}`,
+                              }}>
+                                {row.team}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: "6px 12px" }}>
+                            <div style={{
+                              fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700,
+                              color: isA ? "#e0f7fa" : isB ? "#e8eafd" : "#c0ccd8",
+                            }}>
+                              {player?.nickname}
+                            </div>
+                          </td>
+                          {STAT_COLS.map(c => (
+                            <td key={c.key} style={{ padding: "3px 3px" }}>
+                              <input
+                                type="number"
+                                value={row[c.key] as number}
+                                min={c.min}
+                                max={c.max}
+                                step={c.step}
+                                disabled={!row.selected}
+                                onChange={e => updateStat(idx, c.key, parseFloat(e.target.value) || 0)}
+                                style={{
+                                  width: "100%",
+                                  background: row.selected
+                                    ? (isA ? "rgba(14,116,144,0.08)" : isB ? "rgba(99,102,241,0.07)" : "#0b0f14")
+                                    : "#080a0e",
+                                  border: `1px solid ${isA ? "rgba(14,116,144,0.2)" : isB ? "rgba(99,102,241,0.2)" : "#131d27"}`,
+                                  color: row.selected ? "#d8e4ee" : "#2a3a4a",
+                                  fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
+                                  padding: "5px 4px", outline: "none", textAlign: "center",
+                                  minWidth: 58, borderRadius: 4,
+                                }}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      </>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
