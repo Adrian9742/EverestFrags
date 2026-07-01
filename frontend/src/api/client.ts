@@ -83,6 +83,9 @@ export interface PlayerPublic {
   role: "admin" | "viewer";
   avatar_initials: string;
   avatar_url: string | null;
+  bio?: string | null;
+  favorite_map?: string | null;
+  country?: string | null;
 }
 
 /** Apelido (display_name) se definido, senão o nickname sincronizado com a Steam. */
@@ -231,6 +234,9 @@ export interface PlayerResponse {
   role: string;
   is_active: boolean;
   created_at: string;
+  bio?: string | null;
+  favorite_map?: string | null;
+  country?: string | null;
 }
 
 export interface PlayerCreate {
@@ -252,7 +258,7 @@ export const playersApi = {
       body: JSON.stringify(data),
     }),
 
-  update: (id: number, data: Partial<Omit<PlayerCreate, "steam_id">> & { is_active?: boolean; role?: string; steam_id?: string | null; display_name?: string }) =>
+  update: (id: number, data: Partial<Omit<PlayerCreate, "steam_id">> & { is_active?: boolean; role?: string; steam_id?: string | null; display_name?: string; bio?: string; favorite_map?: string; country?: string }) =>
     request<PlayerResponse>(`/api/players/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),

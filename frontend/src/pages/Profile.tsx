@@ -85,6 +85,12 @@ function HistoryChart({ data }: { data: PlayerMatchHistory[] }) {
   );
 }
 
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return "🌎";
+  const offset = 127397;
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => c.charCodeAt(0) + offset));
+}
+
 export function Profile() {
   const { player, isLoading, refreshPlayer } = useAuth();
   const navigate = useNavigate();
@@ -107,14 +113,25 @@ export function Profile() {
   const [pwdError, setPwdError] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
 
-  // Edição do apelido (display_name) — separado do nickname sincronizado com a Steam
+  // Edição do apelido (display_name)
   const [apelido, setApelido] = useState("");
   const [apelidoMsg, setApelidoMsg] = useState("");
   const [apelidoError, setApelidoError] = useState(false);
   const [savingApelido, setSavingApelido] = useState(false);
 
+  // Edição de identidade: bio, mapa favorito, país
+  const [bio, setBio] = useState("");
+  const [favoriteMap, setFavoriteMap] = useState("");
+  const [country, setCountry] = useState("");
+  const [identityMsg, setIdentityMsg] = useState("");
+  const [identityError, setIdentityError] = useState(false);
+  const [savingIdentity, setSavingIdentity] = useState(false);
+
   useEffect(() => {
     setApelido(player?.display_name ?? "");
+    setBio(player?.bio ?? "");
+    setFavoriteMap(player?.favorite_map ?? "");
+    setCountry(player?.country ?? "");
   }, [player]);
 
   // Redireciona se não estiver logado
@@ -134,6 +151,25 @@ export function Profile() {
       setApelidoMsg(e.message ?? "Erro ao salvar apelido."); setApelidoError(true);
     } finally {
       setSavingApelido(false);
+    }
+  }
+
+  async function handleSaveIdentity() {
+    if (!player) return;
+    setIdentityMsg(""); setIdentityError(false);
+    setSavingIdentity(true);
+    try {
+      await playersApi.update(player.id, {
+        bio: bio.trim(),
+        favorite_map: favoriteMap,
+        country: country.trim().toUpperCase().slice(0, 5),
+      });
+      await refreshPlayer();
+      setIdentityMsg("Identidade salva.");
+    } catch (e: any) {
+      setIdentityMsg(e.message ?? "Erro ao salvar."); setIdentityError(true);
+    } finally {
+      setSavingIdentity(false);
     }
   }
 
@@ -452,6 +488,93 @@ export function Profile() {
               // {apelidoMsg}
             </div>
           )}
+        </div>
+
+        {/* Identidade — bio, mapa favorito, país */}
+        <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "24px 28px", marginBottom: 24, position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#e0a82e,transparent)" }} />
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "2px", color: "#e3ebf3", marginBottom: 6 }}>
+            IDENTIDADE
+          </div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#4a5868", marginBottom: 20 }}>
+            Bio, mapa favorito e bandeira — aparecem no seu perfil público.
+          </div>
+
+          {/* Bio */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 6 }}>
+              BIO <span style={{ color: "#2a3a4a" }}>· max 200 caracteres</span>
+            </label>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              maxLength={200}
+              rows={3}
+              placeholder="Ex: Entry do grupo, main mirage, joga desde 2015..."
+              style={{
+                ...inputStyle, resize: "vertical", minHeight: 70,
+                fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.6,
+              }}
+            />
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#2a3a4a", marginTop: 4, textAlign: "right" }}>
+              {bio.length}/200
+            </div>
+          </div>
+
+          {/* Mapa favorito + País */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 18 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 6 }}>MAPA FAVORITO</label>
+              <select
+                value={favoriteMap}
+                onChange={e => setFavoriteMap(e.target.value)}
+                style={{ ...inputStyle, cursor: "pointer" }}
+              >
+                <option value="">— nenhum</option>
+                {["de_dust2","de_mirage","de_inferno","de_nuke","de_ancient","de_anubis","de_vertigo","de_train","de_overpass","de_cache"].map(m => (
+                  <option key={m} value={m}>{m.replace("de_","")}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 6 }}>
+                PAÍS <span style={{ color: "#2a3a4a" }}>· código ISO (BR, PT, AR...)</span>
+              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {country && (
+                  <span style={{ fontSize: 22, lineHeight: 1 }}>
+                    {countryFlag(country)}
+                  </span>
+                )}
+                <input
+                  value={country}
+                  onChange={e => setCountry(e.target.value.toUpperCase().slice(0, 2))}
+                  maxLength={2}
+                  placeholder="BR"
+                  style={{ ...inputStyle, flex: 1, letterSpacing: "4px", fontWeight: 700, textTransform: "uppercase" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <button
+              onClick={handleSaveIdentity}
+              disabled={savingIdentity}
+              style={{
+                background: savingIdentity ? "#0a5567" : "#0e7490", border: "none", color: "#fff",
+                fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: 1.5,
+                padding: "11px 24px", cursor: savingIdentity ? "wait" : "pointer",
+              }}
+            >
+              {savingIdentity ? "SALVANDO..." : "SALVAR IDENTIDADE"}
+            </button>
+            {identityMsg && (
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: identityError ? "#f87171" : "#34d399" }}>
+                // {identityMsg}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Alterar senha — só para players com conta interna (não steam-only) */}

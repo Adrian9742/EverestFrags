@@ -185,6 +185,7 @@ export function Dashboard() {
   const topFrag = useMemo(() => getBestBy(ranking, "kills"), [ranking]);
   const topDuel = useMemo(() => getBestBy(ranking, "score_duel"), [ranking]);
   const topPlayers = ranking.slice(0, 6);
+  const myEntry = player ? ranking.find(r => r.player_id === player.id) ?? null : null;
 
   return (
     <div className="ig-page ef-social-app">
@@ -218,18 +219,57 @@ export function Dashboard() {
             </div>
           ) : (
             <>
-              <section className="ig-composer ef-quick-panel">
-                <div className="ig-composer-left">
-                  <Avatar avatarUrl={player?.avatar_url} initials={player?.avatar_initials} nickname={player ? displayNameOf(player) : "Visitante"} size="sm" shape="squircle" />
-                  <div>
-                    <strong>{ranking.length > 0 ? "Escolha o que quer acompanhar" : "O feed aparece conforme o grupo joga"}</strong>
-                    <span>
-                      {ranking.length > 0
-                        ? "Partidas recentes, ranking, comparações e sorteio ficam a um clique."
-                        : "Quando o backend estiver com partidas, os posts entram aqui automaticamente."}
-                    </span>
+              <section className="ig-composer ef-quick-panel" style={{
+                background: "linear-gradient(135deg, rgba(14,116,144,0.07) 0%, rgba(7,10,14,0) 50%, rgba(99,102,241,0.05) 100%)",
+                border: "1px solid rgba(14,116,144,0.14)",
+                borderRadius: 16,
+                padding: "16px 18px 14px",
+              }}>
+                {/* Mini-stats bar — mostra stats do player logado */}
+                {player && myEntry ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+                    <Avatar avatarUrl={player.avatar_url} initials={player.avatar_initials} nickname={displayNameOf(player)} size="sm" shape="squircle" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 18, color: "#f0f9ff", lineHeight: 1 }}>
+                        {displayNameOf(player)}
+                      </div>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#3a4d60", marginTop: 3, letterSpacing: "1px" }}>
+                        #{myEntry.rank} · {myEntry.level_name?.toUpperCase()}
+                      </div>
+                    </div>
+                    {[
+                      { label: "K/D",    value: myEntry.kd_ratio.toFixed(2) },
+                      { label: "ADR",    value: myEntry.adr.toFixed(0) },
+                      { label: "RATING", value: myEntry.hltv_rating.toFixed(2) },
+                      { label: "SCORE",  value: Math.round(myEntry.score_final) },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{
+                        textAlign: "center", background: "rgba(14,116,144,0.08)",
+                        border: "1px solid rgba(14,116,144,0.15)", borderRadius: 10,
+                        padding: "7px 14px", flexShrink: 0,
+                      }}>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 15, color: "#22d3ee", lineHeight: 1 }}>
+                          {value}
+                        </div>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: "#3a4d60", marginTop: 3, letterSpacing: "1.5px" }}>
+                          {label}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="ig-composer-left" style={{ marginBottom: 14 }}>
+                    <Avatar avatarUrl={player?.avatar_url} initials={player?.avatar_initials} nickname={player ? displayNameOf(player) : "Visitante"} size="sm" shape="squircle" />
+                    <div>
+                      <strong>{ranking.length > 0 ? "Escolha o que quer acompanhar" : "O feed aparece conforme o grupo joga"}</strong>
+                      <span>
+                        {ranking.length > 0
+                          ? "Partidas recentes, ranking, comparações e sorteio ficam a um clique."
+                          : "Quando o backend estiver com partidas, os posts entram aqui automaticamente."}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="ig-composer-actions">
                   <Link viewTransition to="/matches">Partidas</Link>

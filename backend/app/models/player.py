@@ -12,7 +12,7 @@ Isso tornava impossível implementar login e o campo não batia com o spec.
 
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import Integer, String, Boolean, DateTime
+from sqlalchemy import Integer, String, Boolean, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -52,6 +52,11 @@ class Player(Base):
 
     # Permite desativar um player sem deletar seu histórico
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # Campos de identidade editáveis pelo próprio player
+    bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    favorite_map: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

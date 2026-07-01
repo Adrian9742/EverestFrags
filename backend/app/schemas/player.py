@@ -29,8 +29,8 @@ class PlayerUpdate(BaseModel):
     """
     Todos os campos opcionais — só o que for enviado é atualizado.
 
-    display_name pode ser enviado pelo próprio player ou por um admin (ver
-    require_admin_or_self no router); os demais campos exigem admin.
+    display_name, bio, favorite_map, country podem ser enviados pelo próprio player;
+    os demais campos (nickname, role, is_active, steam_id) exigem admin.
     """
 
     nickname: Optional[str] = Field(None, min_length=2, max_length=50, pattern=r"^[\w\-. ]{2,50}$")
@@ -39,6 +39,9 @@ class PlayerUpdate(BaseModel):
     avatar_initials: Optional[str] = Field(None, min_length=1, max_length=2)
     role: Optional[str] = Field(None, pattern="^(admin|viewer)$")
     is_active: Optional[bool] = None
+    bio: Optional[str] = Field(None, max_length=200)
+    favorite_map: Optional[str] = Field(None, max_length=50)
+    country: Optional[str] = Field(None, max_length=5)
 
 
 class PlayerPublic(BaseModel):
@@ -50,6 +53,9 @@ class PlayerPublic(BaseModel):
     role: str
     avatar_initials: str
     avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    favorite_map: Optional[str] = None
+    country: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -81,6 +87,9 @@ class PlayerResponsePublic(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    bio: Optional[str] = None
+    favorite_map: Optional[str] = None
+    country: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

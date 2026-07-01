@@ -101,6 +101,12 @@ def update_player(db: Session, player_id: int, data: PlayerUpdate) -> Player:
         player.role = data.role
     if data.is_active is not None:
         player.is_active = data.is_active
+    if data.bio is not None:
+        player.bio = data.bio.strip() or None
+    if data.favorite_map is not None:
+        player.favorite_map = data.favorite_map or None
+    if data.country is not None:
+        player.country = data.country.strip().upper() or None
 
     db.commit()
     db.refresh(player)
