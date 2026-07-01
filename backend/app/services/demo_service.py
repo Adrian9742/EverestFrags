@@ -1,13 +1,12 @@
 """
 demo_service — parse leve de .dem do CS2
 
-Estratégia de memória:
-  1. Salva bytes em arquivo temporário
+Estratégia:
+  1. Recebe o caminho do arquivo (já salvo pelo router)
   2. Parseia APENAS os eventos necessários (player_death, player_hurt, round_end,
      player_blind, item_purchase, round_mvp)
-  3. Deleta o arquivo temporário imediatamente após o parse dos eventos
-  4. Agrega métricas em memória (dicts leves, sem DataFrames)
-  5. Retorna apenas as stats computadas
+  3. Agrega métricas em memória (dicts leves, sem DataFrames)
+  4. Retorna apenas as stats computadas — não deleta o arquivo (responsabilidade do caller)
 
 NÃO usa parse_ticks() — evita carregar todos os snapshots do demo em memória.
 disadvantage_kills/advantage_kills/eco_kills/kast_percent também NÃO precisam de
@@ -15,8 +14,6 @@ parse_ticks: contagem de vivos por time e gasto por round são derivados só dos
 eventos já parseados (player_death + item_purchase), em ordem cronológica de tick.
 """
 
-import os
-import tempfile
 from typing import Any
 
 TRADE_WINDOW_TICKS = 5 * 128   # 5 segundos a 128 tick
@@ -34,7 +31,13 @@ def _s(val) -> str:
     return s
 
 
-def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
+def parse_demo(dem_path: str) -> dict[str, Any]:
+    """Parseia um demo CS2 a partir de um caminho de arquivo.
+
+    Recebe o caminho direto para evitar escrever um segundo arquivo temporário —
+    o caller (demo router) já salvou o arquivo descomprimido em disco.
+    O arquivo NÃO é deletado aqui; quem chama é responsável pela limpeza.
+    """
     try:
         from demoparser2 import DemoParser
     except ImportError:
@@ -42,73 +45,60 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
 
     errors: list[str] = []
 
-    # ── 1. Grava temporário ────────────────────────────────────────────────────
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".dem")
+    parser = DemoParser(dem_path)
+
+    # ── 2. Header (mapa) ──────────────────────────────────────────────────
+    map_name: str | None = None
     try:
-        os.write(tmp_fd, dem_bytes)
-        os.close(tmp_fd)
+        header = parser.parse_header()
+        map_name = (header.get("map_name") or "").strip() or None
+    except Exception:
+        errors.append("Não foi possível ler o mapa do header.")
 
-        parser = DemoParser(tmp_path)
+    # ── 3. Parseia apenas os eventos necessários ───────────────────────────
+    kills_df = hurt_df = rounds_df = flash_df = purchase_df = None
 
-        # ── 2. Header (mapa) ──────────────────────────────────────────────────
-        map_name: str | None = None
-        try:
-            header = parser.parse_header()
-            map_name = (header.get("map_name") or "").strip() or None
-        except Exception:
-            errors.append("Não foi possível ler o mapa do header.")
+    try:
+        kills_df = parser.parse_event(
+            "player_death",
+            player=["team_num", "steamid"],
+            other=["total_rounds_played"],
+        )
+    except Exception as e:
+        raise RuntimeError(f"Falha ao ler kills do demo: {e}")
 
-        # ── 3. Parseia apenas os eventos necessários ───────────────────────────
-        kills_df = hurt_df = rounds_df = flash_df = purchase_df = None
+    try:
+        hurt_df = parser.parse_event(
+            "player_hurt",
+            player=["team_num", "steamid"],
+            other=["total_rounds_played", "health", "dmg_health"],
+        )
+    except Exception as e:
+        errors.append(f"Eventos de dano indisponíveis: {e}")
 
-        try:
-            kills_df = parser.parse_event(
-                "player_death",
-                player=["team_num", "steamid"],
-                other=["total_rounds_played"],
-            )
-        except Exception as e:
-            raise RuntimeError(f"Falha ao ler kills do demo: {e}")
+    try:
+        rounds_df = parser.parse_event("round_end", other=["total_rounds_played"])
+    except Exception as e:
+        errors.append(f"Eventos de round indisponíveis: {e}")
 
-        try:
-            hurt_df = parser.parse_event(
-                "player_hurt",
-                player=["team_num", "steamid"],
-                other=["total_rounds_played", "health", "dmg_health"],
-            )
-        except Exception as e:
-            errors.append(f"Eventos de dano indisponíveis: {e}")
+    try:
+        flash_df = parser.parse_event(
+            "player_blind",
+            player=["team_num", "steamid"],
+            other=["attacker_steamid", "attacker_name"],
+        )
+    except Exception as e:
+        errors.append(f"Eventos de flash indisponíveis: {e}")
 
-        try:
-            rounds_df = parser.parse_event("round_end", other=["total_rounds_played"])
-        except Exception as e:
-            errors.append(f"Eventos de round indisponíveis: {e}")
+    try:
+        purchase_df = parser.parse_event("item_purchase", other=["total_rounds_played"])
+    except Exception as e:
+        errors.append(f"Eventos de compra indisponíveis: {e}")
 
-        try:
-            flash_df = parser.parse_event(
-                "player_blind",
-                player=["team_num", "steamid"],
-                other=["attacker_steamid", "attacker_name"],
-            )
-        except Exception as e:
-            errors.append(f"Eventos de flash indisponíveis: {e}")
-
-        try:
-            purchase_df = parser.parse_event("item_purchase", other=["total_rounds_played"])
-        except Exception as e:
-            errors.append(f"Eventos de compra indisponíveis: {e}")
-
-        try:
-            mvp_df = parser.parse_event("round_mvp", player=["steamid"])
-        except Exception:
-            mvp_df = None  # fallback para heurística de kills/dano
-
-    finally:
-        # ── 3b. Descarta o arquivo imediatamente ──────────────────────────────
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+    try:
+        mvp_df = parser.parse_event("round_mvp", player=["steamid"])
+    except Exception:
+        mvp_df = None  # fallback para heurística de kills/dano
 
     # ─────────────────────────────────────────────────────────────────────────
     # A partir daqui: apenas dicts leves, sem DemoParser em memória

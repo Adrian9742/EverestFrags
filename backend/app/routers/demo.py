@@ -82,15 +82,24 @@ def _resolve_players(result: dict, db: Session) -> dict:
 
 
 def _run_parse(job_id: str, tmp_path: str) -> None:
-    """Background task: lê arquivo, parseia, resolve players, salva resultado no banco."""
+    """Background task: descomprime se necessário, parseia, resolve players, salva resultado."""
     db = SessionLocal()
     try:
+        # Descomprime in-place — evita ler bytes para memória + reescrever em segundo temp
         with open(tmp_path, "rb") as fh:
-            content = fh.read()
+            raw = fh.read()
+        if len(raw) >= 2 and raw[:2] == _GZIP_MAGIC:
+            import gzip as _gzip
+            decompressed = _gzip.decompress(raw)
+            del raw
+            with open(tmp_path, "wb") as fh:
+                fh.write(decompressed)
+            del decompressed
+        else:
+            del raw
 
         from app.services.demo_service import parse_demo as _parse
-        result = _parse(content)
-        del content
+        result = _parse(tmp_path)  # recebe caminho — sem temp extra
 
         _resolve_players(result, db)
 
@@ -138,20 +147,16 @@ async def parse_demo(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao ler arquivo: {e}")
 
-    # Descomprime gzip (CS2 a partir de 2025)
-    try:
-        content = _decompress_if_needed(content)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Falha ao descomprimir demo: {e}")
-
-    if len(content) < 8 or content[:8] != _PBDEMS2_MAGIC:
-        raise HTTPException(status_code=400, detail="Arquivo inválido: não é um demo CS2 (PBDEMS2)")
+    # Valida magic bytes antes de descomprimir — aceita gzip ou PBDEMS2 direto
+    if len(content) < 8 or (content[:2] != _GZIP_MAGIC and content[:8] != _PBDEMS2_MAGIC):
+        raise HTTPException(status_code=400, detail="Arquivo inválido: não é um demo CS2")
 
     size_mb = len(content) / (1024 * 1024)
     if size_mb > MAX_SIZE_MB:
         raise HTTPException(status_code=413, detail=f"Demo muito grande ({size_mb:.0f}MB). Limite: {MAX_SIZE_MB}MB")
 
-    # Salva em arquivo temporário persistente (background task lerá daqui)
+    # Salva bytes RAW (comprimido ou não) — descompressão acontece na background task
+    # para não bloquear o event loop assíncrono.
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".dem")
     try:
         os.write(tmp_fd, content)
