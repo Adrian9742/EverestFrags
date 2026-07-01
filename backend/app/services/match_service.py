@@ -14,7 +14,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_
 
-from app.models.match import Match, PlayerMatchStats, PlayerVsPlayerStats
+from app.models.match import Match, PlayerMatchStats, PlayerVsPlayerStats, PlayerWins
 from app.models.player import Player
 from app.schemas.match import MatchCreate, HeadToHeadResponse
 
@@ -132,6 +132,41 @@ def create_match(db: Session, data: MatchCreate) -> Match:
             kills=vs.kills,
             flash_assists=vs.flash_assists,
         ))
+
+    # Auto-registro de vitórias quando o demo já tem o vencedor detectado
+    if data.team_winner in ("A", "B"):
+        a_ids = [ps.player_id for ps in data.players if ps.team == "A"]
+        b_ids = [ps.player_id for ps in data.players if ps.team == "B"]
+        if a_ids and b_ids:
+            winning_team_num = 1 if data.team_winner == "A" else 2
+            match.team_1_ids = a_ids
+            match.team_2_ids = b_ids
+            match.winning_team = winning_team_num
+
+            winners = a_ids if winning_team_num == 1 else b_ids
+            losers  = b_ids if winning_team_num == 1 else a_ids
+
+            def _get_or_create_pw(player_id: int) -> PlayerWins:
+                row = db.query(PlayerWins).filter(PlayerWins.player_id == player_id).first()
+                if not row:
+                    row = PlayerWins(player_id=player_id)
+                    db.add(row)
+                    db.flush()
+                return row
+
+            for pid in winners:
+                row = _get_or_create_pw(pid)
+                row.wins += 1
+                row.win_streak += 1
+                if row.win_streak > row.max_win_streak:
+                    row.max_win_streak = row.win_streak
+                row.points += 3
+
+            for pid in losers:
+                row = _get_or_create_pw(pid)
+                row.losses += 1
+                row.win_streak = 0
+                row.points = max(0, row.points - 1)
 
     db.commit()
     db.refresh(match)

@@ -316,6 +316,7 @@ export interface MatchCreate {
   notes?: string;
   players: PlayerStatsCreate[];
   matchups?: MatchupCreate[];
+  team_winner?: string;
 }
 
 export interface MatchResponse {
@@ -372,6 +373,9 @@ export interface MatchDetailResponse {
   notes: string | null;
   created_at: string;
   players: PlayerStatsInMatch[];
+  winning_team: number | null;
+  team_1_ids: number[] | null;
+  team_2_ids: number[] | null;
 }
 
 export const matchesApi = {

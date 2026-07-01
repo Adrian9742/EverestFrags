@@ -115,6 +115,8 @@ class MatchCreate(BaseModel):
     # Confrontos diretos — opcional, só vem preenchido quando a partida é
     # criada a partir de um upload de demo (entrada manual não tem essa info)
     matchups: List[MatchupCreate] = Field(default_factory=list)
+    # Vencedor detectado pelo demo ("A" ou "B") — se presente, registra vitórias ao criar
+    team_winner: Optional[str] = Field(None, description="'A' ou 'B'")
 
 
 class MatchResponse(BaseModel):
@@ -141,6 +143,9 @@ class MatchDetailResponse(BaseModel):
     notes: Optional[str] = None
     created_at: datetime
     players: List[PlayerStatsInMatch] = []
+    winning_team: Optional[int] = None
+    team_1_ids: Optional[list] = None
+    team_2_ids: Optional[list] = None
 
     model_config = {"from_attributes": True}
 

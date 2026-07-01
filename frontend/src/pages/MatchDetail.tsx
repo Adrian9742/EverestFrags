@@ -25,6 +25,7 @@ export function MatchDetail() {
   const [winWinner, setWinWinner] = useState<1 | 2>(1);
   const [savingResult, setSavingResult] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
+  const [removingResult, setRemovingResult] = useState(false);
 
   const [narrativeText, setNarrativeText] = useState<string | null>(null);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
@@ -83,6 +84,22 @@ export function MatchDetail() {
     } catch (e: any) {
       setError(e.message ?? "Erro ao deletar");
       setDeleting(false);
+    }
+  }
+
+  async function handleRemoveResult() {
+    if (!match) return;
+    if (!confirm("Remover o resultado desta partida e desfazer o impacto no placar de vitórias?")) return;
+    setRemovingResult(true);
+    try {
+      await winsApi.removeResult(match.id);
+      const updated = await matchesApi.get(match.id);
+      setMatch(updated);
+      setError("");
+    } catch (e: any) {
+      setError(e.message ?? "Erro ao remover resultado");
+    } finally {
+      setRemovingResult(false);
     }
   }
 
@@ -189,11 +206,20 @@ export function MatchDetail() {
           </div>
 
           {isAdmin && (
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               {error && (
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#ff5a33" }}>
                   // {error}
                 </span>
+              )}
+              {match.winning_team != null && (
+                <button
+                  onClick={handleRemoveResult}
+                  disabled={removingResult}
+                  style={{ background: "transparent", border: "1px solid #44403c", color: "#a8a29e", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: 1.5, padding: "10px 18px", cursor: removingResult ? "wait" : "pointer" }}
+                >
+                  {removingResult ? "REMOVENDO..." : "REMOVER RESULTADO"}
+                </button>
               )}
               <button
                 onClick={handleDelete}
@@ -294,16 +320,26 @@ export function MatchDetail() {
         {/* Registro de resultado — admin only */}
         {isAdmin && (
           <div style={{ marginTop: 32, borderTop: "1px solid #1b2530", paddingTop: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "2px", color: "#5d6d80" }}>
                 RESULTADO DA PARTIDA
               </span>
-              <button
-                onClick={() => setShowResultForm(v => !v)}
-                style={{ background: "transparent", border: "1px solid #1b2530", color: "#0e7490", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: 1.5, padding: "6px 12px", cursor: "pointer" }}
-              >
-                {showResultForm ? "CANCELAR" : "REGISTRAR RESULTADO"}
-              </button>
+              {match.winning_team != null ? (
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "1px",
+                  background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)",
+                  color: "#22d3ee", padding: "4px 10px",
+                }}>
+                  Time {match.winning_team === 1 ? "A" : "B"} venceu · resultado registrado
+                </span>
+              ) : (
+                <button
+                  onClick={() => setShowResultForm(v => !v)}
+                  style={{ background: "transparent", border: "1px solid #1b2530", color: "#0e7490", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: 1.5, padding: "6px 12px", cursor: "pointer" }}
+                >
+                  {showResultForm ? "CANCELAR" : "REGISTRAR RESULTADO"}
+                </button>
+              )}
             </div>
 
             {showResultForm && (
