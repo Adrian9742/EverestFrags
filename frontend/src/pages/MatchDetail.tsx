@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { matchesApi, type MatchDetailResponse, winsApi, aiApi } from "../api/client";
+import { matchesApi, type MatchDetailResponse, type PlayerStatsInMatch, winsApi, aiApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { Navbar } from "../components/Navbar";
 
@@ -130,7 +130,7 @@ export function MatchDetail() {
     return palettes[h];
   }
 
-  function PlayerRow({ p, isMvp }: { p: typeof allSorted[0]; isMvp: boolean }) {
+  function PlayerRow({ p, isMvp }: { p: PlayerStatsInMatch; isMvp: boolean }) {
     const diff = p.kills - p.deaths;
     return (
       <tr className={isMvp ? "ef-pulse-glow" : ""} style={{ borderBottom: "1px solid #111", background: isMvp ? "rgba(14,116,144,0.06)" : "transparent" }}>
@@ -320,7 +320,7 @@ export function MatchDetail() {
                         TIME {t}
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {players.map(p => {
+                        {allSorted.map(p => {
                           const inThis = (t === 1 ? winTeam1 : winTeam2).includes(p.player_id);
                           const inOther = (t === 1 ? winTeam2 : winTeam1).includes(p.player_id);
                           return (
