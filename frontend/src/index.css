@@ -1526,10 +1526,10 @@ body .ig-page .ig-layout.ef-feed-layout {
 }
 
 body .ig-page .ig-layout.ef-feed-layout > .ig-feed-column {
-  width: 100% !important;
+  width: min(680px, 100%) !important;
   min-width: 0 !important;
-  max-width: 680px !important;
-  margin: 0 !important;
+  justify-self: center !important;
+  margin: 0 auto !important;
 }
 
 body .ig-page .ig-layout.ef-feed-layout > .ig-right-column,
