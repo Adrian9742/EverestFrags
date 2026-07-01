@@ -74,7 +74,7 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
             hurt_df = parser.parse_event(
                 "player_hurt",
                 player=["team_num", "steamid"],
-                other=["total_rounds_played"],
+                other=["total_rounds_played", "health", "dmg_health"],
             )
         except Exception as e:
             errors.append(f"Eventos de dano indisponíveis: {e}")
@@ -220,10 +220,18 @@ def parse_demo(dem_bytes: bytes) -> dict[str, Any]:
                 hp_round[vic] = rnd
                 hp_state[vic] = 100  # vida cheia no início de cada round
             health_before = hp_state[vic]
-            health_after = row.get("health")
-            health_after = int(health_after) if health_after is not None else 0
-            real_dmg = max(0, health_before - health_after)
-            hp_state[vic] = health_after
+            health_after_raw = row.get("health")
+            if health_after_raw is not None:
+                # Reconstrução exata a partir do HP restante
+                health_after = int(health_after_raw)
+                real_dmg = max(0, health_before - health_after)
+                hp_state[vic] = health_after
+            else:
+                # Fallback: usa dmg_health do evento, capado pelo HP disponível
+                # (evita overkill: tiro de 120 em jogador com 25 HP conta só 25)
+                dmg_raw = int(row.get("dmg_health") or 0)
+                real_dmg = min(dmg_raw, health_before)
+                hp_state[vic] = max(0, health_before - real_dmg)
 
             # Só conta dano em INIMIGO — fogo amigo (mesmo time) e autodano (própria
             # granada/queda, que sempre cai no mesmo time do atacante) são excluídos,
