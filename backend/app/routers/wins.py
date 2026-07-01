@@ -5,6 +5,8 @@ POST /api/matches/{id}/result   → registra resultado (admin) — time 1 ou tim
 GET  /api/wins/ranking          → placar de vitórias (público)
 GET  /api/players/{id}/wins     → histórico de vitórias do player (público)
 DELETE /api/matches/{id}/result → remove resultado registrado (admin)
+POST /api/wins/sync             → reaplica todos os resultados salvos (admin) — corrige player_wins desincronizados
+GET  /api/wins/pending          → partidas com winning_team mas players faltando no placar (admin)
 """
 
 from typing import Optional
@@ -171,6 +173,63 @@ def wins_ranking(db: Session = Depends(get_db)):
             "points": pw.points,
         })
     return result
+
+
+@router.post("/api/wins/sync", status_code=status.HTTP_200_OK)
+def sync_wins(
+    db: Session = Depends(get_db),
+    _admin: Player = Depends(require_admin),
+):
+    """
+    Reaplica do zero todos os resultados registrados em matches.winning_team.
+    Limpa player_wins inteiramente e reconstrói a partir das partidas com resultado —
+    garante consistência total mesmo que resultados tenham sido registrados manualmente
+    com times incompletos.
+    """
+    # Apaga tudo e reconstrói — mais seguro que tentar aplicar diffs
+    db.query(PlayerWins).delete()
+
+    matches_with_result = (
+        db.query(Match)
+        .filter(
+            Match.winning_team.isnot(None),
+            Match.team_1_ids.isnot(None),
+            Match.team_2_ids.isnot(None),
+        )
+        .order_by(Match.played_at.asc(), Match.id.asc())
+        .all()
+    )
+
+    total_matches = len(matches_with_result)
+    for match in matches_with_result:
+        _apply_result(db, match, match.winning_team, match.team_1_ids, match.team_2_ids)
+
+    db.commit()
+    return {"message": f"Sincronizado: {total_matches} partida(s) reprocessada(s)"}
+
+
+@router.get("/api/wins/unregistered")
+def unregistered_matches(
+    db: Session = Depends(get_db),
+    _admin: Player = Depends(require_admin),
+):
+    """Partidas sem resultado registrado — lista para o admin saber o que falta."""
+    matches = (
+        db.query(Match)
+        .filter(Match.winning_team.is_(None))
+        .order_by(Match.played_at.desc())
+        .limit(20)
+        .all()
+    )
+    return [
+        {
+            "id": m.id,
+            "played_at": str(m.played_at),
+            "map_name": m.map_name,
+            "player_count": len(m.player_stats),
+        }
+        for m in matches
+    ]
 
 
 @router.get("/api/players/{player_id}/wins")

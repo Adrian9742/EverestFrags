@@ -1,21 +1,8 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
-import { BASE_URL } from "../api/client";
-
-interface WinsEntry {
-  rank: number;
-  player_id: number;
-  nickname: string;
-  display_name: string | null;
-  avatar_initials: string;
-  avatar_url: string | null;
-  wins: number;
-  losses: number;
-  win_rate: number;
-  win_streak: number;
-  max_win_streak: number;
-  points: number;
-}
+import { winsApi, type WinsEntry, type UnregisteredMatch } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 const s: Record<string, React.CSSProperties> = {
   page:    { minHeight: "100vh", background: "#070a0e", color: "#f0f9ff" },
@@ -40,16 +27,38 @@ function Avatar({ entry }: { entry: WinsEntry }) {
 }
 
 export function Wins() {
+  const { isAdmin } = useAuth();
   const [entries, setEntries] = useState<WinsEntry[]>([]);
+  const [unregistered, setUnregistered] = useState<UnregisteredMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
 
-  useEffect(() => {
-    fetch(`${BASE_URL}/api/wins/ranking`)
-      .then(r => r.json())
-      .then(setEntries)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  function loadData() {
+    setLoading(true);
+    const p1 = winsApi.ranking().then(setEntries).catch(console.error);
+    const p2 = isAdmin
+      ? winsApi.unregistered().then(setUnregistered).catch(console.error)
+      : Promise.resolve();
+    Promise.all([p1, p2]).finally(() => setLoading(false));
+  }
+
+  useEffect(() => { loadData(); }, [isAdmin]);
+
+  async function handleSync() {
+    if (!confirm("Reprocessar todos os resultados registrados do zero? O placar de vitórias será recalculado a partir das partidas com resultado salvo.")) return;
+    setSyncing(true);
+    setSyncMsg("");
+    try {
+      const res = await winsApi.sync();
+      setSyncMsg(res.message);
+      loadData();
+    } catch (e: any) {
+      setSyncMsg(e.message ?? "Erro ao sincronizar");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const name = (e: WinsEntry) => e.display_name || e.nickname;
 
@@ -62,7 +71,28 @@ export function Wins() {
             <span style={{ width: 3, height: 24, background: "#0e7490", flexShrink: 0 }} />
             <span style={s.title}>PLACAR DE VITÓRIAS</span>
             <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+            {isAdmin && (
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                style={{
+                  background: "transparent", border: "1px solid #1b2530",
+                  color: syncing ? "#3a4d60" : "#0e7490",
+                  fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
+                  fontSize: 12, letterSpacing: "1.5px", padding: "7px 14px",
+                  cursor: syncing ? "wait" : "pointer", flexShrink: 0,
+                }}
+              >
+                {syncing ? "SINCRONIZANDO..." : "SINCRONIZAR"}
+              </button>
+            )}
           </div>
+
+          {syncMsg && (
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#22d3ee", background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", padding: "8px 14px", marginBottom: 16 }}>
+              ✓ {syncMsg}
+            </div>
+          )}
 
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#2e3e50", letterSpacing: "0.5px", marginBottom: 18 }}>
             // placar paralelo ao ranking — baseado em resultado real das partidas
@@ -129,6 +159,44 @@ export function Wins() {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {/* Partidas sem resultado — visível só para admin */}
+          {isAdmin && unregistered.length > 0 && (
+            <div style={{ marginTop: 40, borderTop: "1px solid #1b2530", paddingTop: 24 }}>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "2.5px", color: "#5d6d80", marginBottom: 14 }}>
+                PARTIDAS SEM RESULTADO ({unregistered.length})
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {unregistered.map(m => (
+                  <Link
+                    key={m.id}
+                    to={`/matches/${m.id}`}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "10px 14px", background: "#0a0f15",
+                      border: "1px solid #1b2530", textDecoration: "none",
+                      color: "#b0bec5",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, color: "#4a5c6a" }}>
+                        #{m.id}
+                      </span>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15 }}>
+                        {m.map_name ?? "Mapa não informado"}
+                      </span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a4d5e" }}>
+                        {m.played_at} · {m.player_count}p
+                      </span>
+                    </div>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "1.5px", color: "#0e7490" }}>
+                      REGISTRAR →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </main>

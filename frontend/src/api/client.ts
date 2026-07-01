@@ -569,6 +569,13 @@ export const demoApi = {
   },
 };
 
+export interface UnregisteredMatch {
+  id: number;
+  played_at: string;
+  map_name: string | null;
+  player_count: number;
+}
+
 export const winsApi = {
   ranking: () => request<WinsEntry[]>("/api/wins/ranking"),
   playerWins: (id: number) => request<PlayerWinsDetail>(`/api/players/${id}/wins`),
@@ -576,6 +583,8 @@ export const winsApi = {
     request<{ message: string }>(`/api/matches/${matchId}/result`, { method: "POST", body: JSON.stringify(data) }),
   removeResult: (matchId: number) =>
     request<{ message: string }>(`/api/matches/${matchId}/result`, { method: "DELETE" }),
+  sync: () => request<{ message: string }>("/api/wins/sync", { method: "POST" }),
+  unregistered: () => request<UnregisteredMatch[]>("/api/wins/unregistered"),
 };
 
 // ─── IA (Groq) ───────────────────────────────────────────────────────────────
