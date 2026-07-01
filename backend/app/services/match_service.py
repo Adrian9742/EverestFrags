@@ -114,6 +114,7 @@ def create_match(db: Session, data: MatchCreate) -> Match:
             he_enemies_hit=ps.he_enemies_hit,
             fire_enemies_hit=ps.fire_enemies_hit,
             fire_damage=ps.fire_damage,
+            team=ps.team,
         )
         db.add(stat)
 

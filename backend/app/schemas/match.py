@@ -43,6 +43,9 @@ class PlayerStatsCreate(BaseModel):
     # MVP (rounds com mais kills do time vencedor)
     mvps: int = Field(0, ge=0)
 
+    # Time ('A' ou 'B') — opcional, só presente quando partida vem de demo parseado
+    team: Optional[str] = Field(None, max_length=1)
+
     # Utility
     flash_assists: int = Field(0, ge=0)
     grenade_damage: int = Field(0, ge=0)
@@ -79,6 +82,7 @@ class PlayerStatsInMatch(BaseModel):
     he_enemies_hit: int
     fire_enemies_hit: int
     fire_damage: int
+    team: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

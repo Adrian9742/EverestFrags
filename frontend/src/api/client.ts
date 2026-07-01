@@ -271,6 +271,7 @@ export const playersApi = {
 
 export interface PlayerStatsCreate {
   player_id: number;
+  team?: "A" | "B" | null;
   kills?: number;
   deaths?: number;
   assists?: number;
@@ -332,6 +333,7 @@ export interface PlayerStatsInMatch {
   player_id: number;
   player_nickname: string;
   player_avatar_initials: string;
+  team: "A" | "B" | null;
   kills: number;
   deaths: number;
   assists: number;

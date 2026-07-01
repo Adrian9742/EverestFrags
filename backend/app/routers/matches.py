@@ -104,6 +104,7 @@ def _to_detail_response(match) -> MatchDetailResponse:
                 he_enemies_hit=s.he_enemies_hit,
                 fire_enemies_hit=s.fire_enemies_hit,
                 fire_damage=s.fire_damage,
+                team=s.team,
             )
         )
     return MatchDetailResponse(

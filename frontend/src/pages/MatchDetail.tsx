@@ -108,8 +108,59 @@ export function MatchDetail() {
     );
   }
 
-  const players = [...match.players].sort((a, b) => b.hltv_rating - a.hltv_rating);
-  const mvpId = players[0]?.player_id;
+  const allSorted = [...match.players].sort((a, b) => b.hltv_rating - a.hltv_rating);
+  const hasTeams = allSorted.some(p => p.team === "A") && allSorted.some(p => p.team === "B");
+  const teamA = allSorted.filter(p => p.team === "A");
+  const teamB = allSorted.filter(p => p.team === "B");
+  const mvpIdA = teamA[0]?.player_id;
+  const mvpIdB = teamB[0]?.player_id;
+  const mvpId = allSorted[0]?.player_id;
+
+  function avatarGradient(initials: string, team: "A" | "B" | null): string {
+    if (team === "A") return "linear-gradient(135deg, #0e7490 0%, #0369a1 100%)";
+    if (team === "B") return "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)";
+    const palettes = [
+      "linear-gradient(135deg, #0e7490 0%, #0f766e 100%)",
+      "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+      "linear-gradient(135deg, #b45309 0%, #92400e 100%)",
+      "linear-gradient(135deg, #059669 0%, #065f46 100%)",
+      "linear-gradient(135deg, #9d174d 0%, #7e1d1d 100%)",
+    ];
+    const h = (initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % palettes.length;
+    return palettes[h];
+  }
+
+  function PlayerRow({ p, isMvp }: { p: typeof allSorted[0]; isMvp: boolean }) {
+    const diff = p.kills - p.deaths;
+    return (
+      <tr className={isMvp ? "ef-pulse-glow" : ""} style={{ borderBottom: "1px solid #111", background: isMvp ? "rgba(14,116,144,0.06)" : "transparent" }}>
+        <td style={{ padding: "10px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: "50%",
+              background: avatarGradient(p.player_avatar_initials, p.team),
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 700,
+              color: "#fff", flexShrink: 0, letterSpacing: 0.3,
+            }}>
+              {p.player_avatar_initials.slice(0, 2).toUpperCase()}
+            </div>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 600, color: "#d0d0d0" }}>
+              {p.player_nickname}
+            </span>
+          </div>
+        </td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.kills}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.deaths}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.assists}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: diff > 0 ? "#4ade80" : diff < 0 ? "#ff5a33" : "#888" }}>
+          {diff > 0 ? `+${diff}` : diff}
+        </td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#aaa" }}>{p.adr.toFixed(1)}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: "#0e7490" }}>{p.hltv_rating.toFixed(2)}</td>
+      </tr>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#070a0e", color: "#e8e8e8", fontFamily: "'Inter', sans-serif", paddingBottom: 32 }}>
@@ -155,7 +206,7 @@ export function MatchDetail() {
           )}
         </div>
 
-        {/* Tabela de stats básicas */}
+        {/* Tabela de stats */}
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
@@ -170,32 +221,31 @@ export function MatchDetail() {
               </tr>
             </thead>
             <tbody>
-              {players.map(p => {
-                const diff = p.kills - p.deaths;
-                const isMvp = p.player_id === mvpId;
-                return (
-                  <tr key={p.player_id} className={isMvp ? "ef-pulse-glow" : ""} style={{ borderBottom: "1px solid #111", background: isMvp ? "rgba(14,116,144,0.06)" : "transparent" }}>
-                    <td style={{ padding: "10px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 26, height: 26, background: "#161616", border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#888", flexShrink: 0 }}>
-                          {p.player_avatar_initials}
-                        </div>
-                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 600, color: "#d0d0d0" }}>
-                          {p.player_nickname}
-                        </span>
-                      </div>
+              {hasTeams ? (
+                <>
+                  {/* Cabeçalho Time A */}
+                  <tr style={{ background: "rgba(14, 116, 144, 0.08)", borderTop: "2px solid rgba(14,116,144,0.35)", borderBottom: "1px solid rgba(14,116,144,0.15)" }}>
+                    <td colSpan={7} style={{ padding: "7px 16px" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "2.5px", color: "#0e7490" }}>
+                        TIME A
+                      </span>
                     </td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.kills}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.deaths}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.assists}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: diff > 0 ? "#4ade80" : diff < 0 ? "#ff5a33" : "#888" }}>
-                      {diff > 0 ? `+${diff}` : diff}
-                    </td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#aaa" }}>{p.adr.toFixed(1)}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: "#0e7490" }}>{p.hltv_rating.toFixed(2)}</td>
                   </tr>
-                );
-              })}
+                  {teamA.map(p => <PlayerRow key={p.player_id} p={p} isMvp={p.player_id === mvpIdA} />)}
+
+                  {/* Separador */}
+                  <tr style={{ background: "rgba(99,102,241,0.08)", borderTop: "2px solid rgba(99,102,241,0.35)", borderBottom: "1px solid rgba(99,102,241,0.15)" }}>
+                    <td colSpan={7} style={{ padding: "7px 16px" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "2.5px", color: "#6366f1" }}>
+                        TIME B
+                      </span>
+                    </td>
+                  </tr>
+                  {teamB.map(p => <PlayerRow key={p.player_id} p={p} isMvp={p.player_id === mvpIdB} />)}
+                </>
+              ) : (
+                allSorted.map(p => <PlayerRow key={p.player_id} p={p} isMvp={p.player_id === mvpId} />)
+              )}
             </tbody>
           </table>
         </div>

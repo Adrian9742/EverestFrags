@@ -113,6 +113,9 @@ class PlayerMatchStats(Base):
     # Rounds em que foi MVP (mais kills do time vencedor; desempate por dano)
     mvps: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    # Time ao qual o jogador pertencia nesta partida — 'A' ou 'B' (nullable para partidas antigas)
+    team: Mapped[Optional[str]] = mapped_column(String(1), nullable=True)
+
     # --- UTILITY (peso 20% no score final) ---
     flash_assists: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     grenade_damage: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
