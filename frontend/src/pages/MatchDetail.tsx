@@ -332,23 +332,67 @@ export function MatchDetail() {
                 }}>
                   Time {match.winning_team === 1 ? "A" : "B"} venceu · resultado registrado
                 </span>
-              ) : (
+              ) : !hasTeams ? (
                 <button
                   onClick={() => setShowResultForm(v => !v)}
                   style={{ background: "transparent", border: "1px solid #1b2530", color: "#0e7490", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: 1.5, padding: "6px 12px", cursor: "pointer" }}
                 >
                   {showResultForm ? "CANCELAR" : "REGISTRAR RESULTADO"}
                 </button>
-              )}
+              ) : null}
             </div>
 
-            {showResultForm && (
+            {/* Partida COM times detectados: dois botões diretos */}
+            {match.winning_team == null && hasTeams && (
+              <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+                {([["A", 1, "#0e7490", "rgba(14,116,144,0.12)", "rgba(14,116,144,0.35)"], ["B", 2, "#6366f1", "rgba(99,102,241,0.10)", "rgba(99,102,241,0.35)"]] as const).map(([label, num, color, bg, border]) => {
+                  const players = num === 1 ? teamA : teamB;
+                  return (
+                    <button
+                      key={label}
+                      disabled={savingResult}
+                      onClick={async () => {
+                        setSavingResult(true);
+                        try {
+                          await winsApi.registerResult(match.id, {
+                            winning_team: num,
+                            team_1_ids: teamA.map(p => p.player_id),
+                            team_2_ids: teamB.map(p => p.player_id),
+                          });
+                          const updated = await matchesApi.get(match.id);
+                          setMatch(updated);
+                          setError("");
+                        } catch (e: any) {
+                          setError(e.message ?? "Erro ao salvar resultado");
+                        } finally {
+                          setSavingResult(false);
+                        }
+                      }}
+                      style={{
+                        flex: 1, background: bg, border: `1px solid ${border}`,
+                        cursor: savingResult ? "wait" : "pointer", padding: "16px 20px",
+                        display: "flex", flexDirection: "column", gap: 6, textAlign: "left",
+                      }}
+                    >
+                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 13, letterSpacing: "3px", color }}>
+                        TIME {label} GANHOU
+                      </div>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: color + "99" }}>
+                        {players.map(p => p.player_nickname).join(" · ")}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Partida SEM times: formulário manual */}
+            {showResultForm && !hasTeams && (
               <div style={{ background: "#0d1218", border: "1px solid #1b2530", padding: 20 }}>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#5d6d80", marginBottom: 16 }}>
                   // distribua os jogadores nos dois times e selecione o vencedor
                 </div>
 
-                {/* Seleção simplificada: cada jogador tem um select de time */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                   {[1, 2].map(t => (
                     <div key={t}>
