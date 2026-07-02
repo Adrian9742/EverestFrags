@@ -107,6 +107,27 @@ def get_current_player(
     return player
 
 
+def get_optional_current_player(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> Optional[Player]:
+    """Igual a get_current_player mas retorna None se não houver token válido."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        sub: Optional[str] = payload.get("sub")
+        if not sub:
+            return None
+        player_id = int(sub)
+    except (JWTError, ValueError):
+        return None
+    return db.query(Player).filter(
+        Player.id == player_id,
+        Player.is_active == True,  # noqa: E712
+    ).first()
+
+
 def require_admin(current: Player = Depends(get_current_player)) -> Player:
     """
     Dependência FastAPI para rotas restritas a admins.

@@ -231,9 +231,10 @@ export interface PlayerResponse {
   steam_id?: string | null;
   avatar_initials: string;
   avatar_url: string | null;
-  role: string;
-  is_active: boolean;
-  created_at: string;
+  // role/is_active/created_at só retornam quando o requisitante é admin
+  role?: string;
+  is_active?: boolean;
+  created_at?: string;
   bio?: string | null;
   favorite_map?: string | null;
   country?: string | null;

@@ -8,6 +8,9 @@ POST /api/auth/change-password → autenticado, troca senha
 """
 
 import logging
+import time
+from collections import defaultdict
+from threading import Lock
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -23,6 +26,36 @@ from app.models.player import Player
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# ─── Per-nickname brute-force protection ────────────────────────────────────
+_fail_lock = Lock()
+_fail_times: dict[str, list[float]] = defaultdict(list)
+_FAIL_WINDOW = 900   # janela de 15 min
+_MAX_FAILS   = 10    # tentativas antes do bloqueio
+_LOCKOUT_SEC = 300   # 5 min bloqueado
+
+
+def _check_lockout(nickname: str) -> None:
+    """Lança 429 se a conta tiver muitas tentativas falhas recentes."""
+    now = time.monotonic()
+    nick = nickname.lower()
+    with _fail_lock:
+        _fail_times[nick] = [t for t in _fail_times[nick] if now - t < _FAIL_WINDOW]
+        if len(_fail_times[nick]) >= _MAX_FAILS:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Conta temporariamente bloqueada por excesso de tentativas. Aguarde 5 minutos.",
+            )
+
+
+def _record_failure(nickname: str) -> None:
+    with _fail_lock:
+        _fail_times[nickname.lower()].append(time.monotonic())
+
+
+def _clear_failures(nickname: str) -> None:
+    with _fail_lock:
+        _fail_times.pop(nickname.lower(), None)
+
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
@@ -32,14 +65,17 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     Lança 401 se as credenciais forem inválidas.
     """
     ip = request.client.host if request.client else "unknown"
+    _check_lockout(data.nickname)  # 429 se a conta já passou do limite de tentativas
     player = authenticate(db, data.nickname, data.password)
     if not player:
+        _record_failure(data.nickname)
         logger.warning("LOGIN_FAIL nickname=%r ip=%s", data.nickname, ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    _clear_failures(data.nickname)  # login OK → reseta contador
     logger.info("LOGIN_OK player_id=%s nickname=%r ip=%s", player.id, player.nickname, ip)
     token = create_access_token({"sub": str(player.id)})
     return TokenResponse(

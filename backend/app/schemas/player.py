@@ -77,16 +77,13 @@ class PlayerResponse(BaseModel):
 
 
 class PlayerResponsePublic(BaseModel):
-    """Resposta pública de jogador — sem steam_id (privacidade). Usada em rotas GET públicas."""
+    """Resposta pública de jogador — sem steam_id, role, is_active, created_at."""
 
     id: int
     nickname: str
     display_name: Optional[str] = None
     avatar_initials: str
     avatar_url: Optional[str] = None
-    role: str
-    is_active: bool
-    created_at: datetime
     bio: Optional[str] = None
     favorite_map: Optional[str] = None
     country: Optional[str] = None

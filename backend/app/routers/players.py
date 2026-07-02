@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.player import PlayerCreate, PlayerUpdate, PlayerResponse, PlayerResponsePublic, PlayerStatsResponse
 from app.schemas.match import HeadToHeadResponse
-from app.services.auth_service import get_current_player, require_admin
+from app.services.auth_service import get_current_player, get_optional_current_player, require_admin
 from app.services.player_service import get_all_players, get_player_by_id, create_player, update_player
 from app.services.ranking_service import get_player_stats, get_player_match_history
 from app.services.match_service import get_head_to_head
@@ -28,10 +28,16 @@ from app.models.player import Player
 router = APIRouter(prefix="/api/players", tags=["players"])
 
 
-@router.get("", response_model=List[PlayerResponsePublic])
-def list_players(db: Session = Depends(get_db)):
-    """Lista todos os jogadores ativos ordenados por nickname."""
-    return get_all_players(db)
+@router.get("", response_model=None)
+def list_players(
+    db: Session = Depends(get_db),
+    current: Player | None = Depends(get_optional_current_player),
+):
+    """Lista todos os jogadores ativos. Admin recebe dados completos; público recebe schema reduzido."""
+    players = get_all_players(db)
+    if current and current.role == "admin":
+        return [PlayerResponse.model_validate(p) for p in players]
+    return [PlayerResponsePublic.model_validate(p) for p in players]
 
 
 @router.post("", response_model=PlayerResponse, status_code=201)
@@ -68,10 +74,17 @@ async def steam_lookup(
     }
 
 
-@router.get("/{player_id}", response_model=PlayerResponsePublic)
-def get_player(player_id: int, db: Session = Depends(get_db)):
-    """Retorna dados públicos de um jogador."""
-    return get_player_by_id(db, player_id)
+@router.get("/{player_id}", response_model=None)
+def get_player(
+    player_id: int,
+    db: Session = Depends(get_db),
+    current: Player | None = Depends(get_optional_current_player),
+):
+    """Retorna dados de um jogador. Admin recebe dados completos; público recebe schema reduzido."""
+    player = get_player_by_id(db, player_id)
+    if current and current.role == "admin":
+        return PlayerResponse.model_validate(player)
+    return PlayerResponsePublic.model_validate(player)
 
 
 @router.patch("/{player_id}", response_model=PlayerResponse)
@@ -92,8 +105,9 @@ def update(
         if current.id != player_id:
             raise HTTPException(status_code=403, detail="Sem permissão para editar este jogador")
         sent_fields = data.model_dump(exclude_unset=True)
-        if set(sent_fields) - {"display_name"}:
-            raise HTTPException(status_code=403, detail="Você só pode editar seu apelido")
+        allowed = {"display_name", "bio", "favorite_map", "country"}
+        if set(sent_fields) - allowed:
+            raise HTTPException(status_code=403, detail="Você só pode editar seu próprio perfil público")
     return update_player(db, player_id, data)
 
 
