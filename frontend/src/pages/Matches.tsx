@@ -188,6 +188,19 @@ export function Matches() {
                       <span style={{ fontSize: 9, opacity: 0.7, letterSpacing: "1px" }}>PLAYERS</span>
                     </div>
 
+                    {/* Resultado registrado */}
+                    {m.winning_team != null && (
+                      <div style={{
+                        fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 700,
+                        letterSpacing: "1.5px", color: "#22c55e",
+                        background: "rgba(34,197,94,0.08)",
+                        border: "1px solid rgba(34,197,94,0.22)",
+                        borderRadius: 6, padding: "4px 9px", flexShrink: 0,
+                      }}>
+                        RESULTADO ✓
+                      </div>
+                    )}
+
                     {/* Chevron */}
                     <div style={{ color: isHovered ? accent : "#1e2d3e", fontSize: 20, flexShrink: 0, transition: "color 0.15s" }}>
                       ›

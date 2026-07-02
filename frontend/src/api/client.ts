@@ -327,6 +327,7 @@ export interface MatchResponse {
   notes: string | null;
   player_count: number;
   created_at: string;
+  winning_team: number | null;
 }
 
 export interface PaginatedMatchResponse {

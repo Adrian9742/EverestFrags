@@ -247,7 +247,7 @@ export function AddMatch() {
       const selectedIds = new Set(selected.map(r => r.player_id));
       const matchups = demoMatchups.filter(m => selectedIds.has(m.player_id) && selectedIds.has(m.opponent_id));
 
-      await matchesApi.create({
+      const created = await matchesApi.create({
         scope_url: scopeUrl || undefined,
         played_at: playedAt,
         map_name: mapName || undefined,
@@ -256,7 +256,7 @@ export function AddMatch() {
         matchups: matchups.length ? matchups : undefined,
         team_winner: (demoTeamWinner === "A" || demoTeamWinner === "B") ? demoTeamWinner : undefined,
       });
-      navigate("/matches");
+      navigate(`/matches/${created.id}`);
     } catch (e: any) {
       setError(e.message ?? "Erro ao salvar");
     } finally {

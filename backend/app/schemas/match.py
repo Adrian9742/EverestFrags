@@ -129,6 +129,7 @@ class MatchResponse(BaseModel):
     notes: Optional[str] = None
     player_count: int = 0
     created_at: datetime
+    winning_team: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
