@@ -130,20 +130,40 @@ def remove_result(
     db: Session = Depends(get_db),
     _admin: Player = Depends(require_admin),
 ):
-    """Remove o resultado registrado e desfaz o impacto no placar."""
+    """Remove o resultado registrado e reconstrói o placar de vitórias do zero.
+
+    Usa reconstrução completa (igual ao /wins/sync) para garantir que win_streak
+    e max_win_streak fiquem corretos — revert incremental não consegue recalcular streaks.
+    """
     match = db.query(Match).filter(Match.id == match_id).first()
     if not match:
         raise HTTPException(status_code=404, detail="Partida não encontrada")
     if match.winning_team is None:
         raise HTTPException(status_code=404, detail="Esta partida não tem resultado registrado")
 
-    _revert_result(db, match)
+    # Remove o resultado desta partida
     match.team_1_ids = None
     match.team_2_ids = None
     match.winning_team = None
-    db.commit()
+    db.flush()
 
-    return {"message": "Resultado removido"}
+    # Reconstrói player_wins do zero — único jeito seguro de recalcular streaks
+    db.query(PlayerWins).delete()
+    matches_with_result = (
+        db.query(Match)
+        .filter(
+            Match.winning_team.isnot(None),
+            Match.team_1_ids.isnot(None),
+            Match.team_2_ids.isnot(None),
+        )
+        .order_by(Match.played_at.asc(), Match.id.asc())
+        .all()
+    )
+    for m in matches_with_result:
+        _apply_result(db, m, m.winning_team, m.team_1_ids, m.team_2_ids)
+
+    db.commit()
+    return {"message": "Resultado removido e placar reconstruído"}
 
 
 @router.get("/api/wins/ranking")

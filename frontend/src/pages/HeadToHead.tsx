@@ -76,9 +76,9 @@ export function HeadToHead() {
   }
 
   const selectStyle: React.CSSProperties = {
-    background: "#080c11",
-    border: "1px solid #212d3a",
-    color: "#e3ebf3",
+    background: "rgba(0,0,0,0.3)",
+    border: "1px solid var(--ef-border)",
+    color: "var(--ef-snow)",
     fontFamily: "'JetBrains Mono', monospace",
     fontSize: 13,
     padding: "10px 14px",
@@ -89,33 +89,25 @@ export function HeadToHead() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#dde6f0", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.35 }} />
-
-      <header style={{ borderBottom: "1px solid #1b2530", background: "linear-gradient(180deg,#0d1218,#070a0e)", padding: "16px 48px" }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 32, height: 32, border: "2px solid #0e7490", display: "flex", alignItems: "center", justifyContent: "center", background: "#04222b" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M2 21 L9 7 L12.5 13 L15.5 6 L22 21 Z" fill="#0e7490" />
-            </svg>
-          </div>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: 1 }}>
-            <span style={{ color: "#f0f9ff" }}>EVEREST</span><span style={{ color: "#0e7490" }}>FRAGS</span>
-          </span>
-        </div>
-      </header>
+    <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
 
       <Navbar />
 
       <main style={{ maxWidth: 860, margin: "0 auto", padding: "32px 48px 0", position: "relative", zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>HEAD-TO-HEAD</span>
-          <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+            // h2h · selecione dois jogadores para comparar
+          </div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1 }}>
+            HEAD-TO-HEAD
+          </div>
         </div>
 
         {/* Seleção de jogadores */}
-        <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "24px 28px", marginBottom: 24, position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "#0e7490" }} />
+        <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "24px 28px", marginBottom: 24, position: "relative", borderRadius: "var(--ef-radius-md)" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "var(--ef-glacier)", borderRadius: "var(--ef-radius-md) var(--ef-radius-md) 0 0" }} />
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <label style={{ display: "block", fontSize: 9.5, letterSpacing: "1.5px", color: "#566476", marginBottom: 6 }}>JOGADOR A</label>
@@ -159,7 +151,7 @@ export function HeadToHead() {
             </button>
           </div>
           {error && (
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#f87171", marginTop: 12 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-danger)", marginTop: 12 }}>
               // {error}
             </div>
           )}
@@ -167,7 +159,7 @@ export function HeadToHead() {
 
         {/* Resultado */}
         {result && (
-          <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "28px 32px", position: "relative" }}>
+          <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "28px 32px", position: "relative", borderRadius: "var(--ef-radius-md)" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#0e7490,#6366f1)" }} />
 
             {/* Cabeçalho com nomes */}

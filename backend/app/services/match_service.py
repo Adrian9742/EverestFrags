@@ -84,6 +84,8 @@ def create_match(db: Session, data: MatchCreate) -> Match:
         played_at=data.played_at,
         map_name=data.map_name,
         notes=data.notes,
+        team_a_score=data.team_a_score,
+        team_b_score=data.team_b_score,
     )
     db.add(match)
     db.flush()  # gera o match.id sem commitar ainda

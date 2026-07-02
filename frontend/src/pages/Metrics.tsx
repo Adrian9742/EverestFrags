@@ -73,33 +73,22 @@ export function Metrics() {
   const maxValue = Math.max(1, ...sorted.map(e => Math.abs(e[active.key] as number)));
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#dde6f0", fontFamily: "'Inter', sans-serif", paddingBottom: 64 }}>
+    <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif", paddingBottom: 64 }}>
 
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.35 }} />
-
-      <header style={{ borderBottom: "1px solid #1b2530", background: "linear-gradient(180deg,#0d1218,#070a0e)", padding: "22px 48px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 18 }}>
-          <div style={{ width: 38, height: 38, border: "2px solid #0e7490", display: "flex", alignItems: "center", justifyContent: "center", background: "#04222b" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M2 21 L9 7 L12.5 13 L15.5 6 L22 21 Z" fill="#0e7490" />
-              <path d="M15.5 6 L13.2 10 L17.8 10 Z" fill="#cfe6ee" />
-              <path d="M9 7 L7.3 10 L10.7 10 Z" fill="#cfe6ee" />
-            </svg>
-          </div>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: 1 }}>
-            <span style={{ color: "#f0f9ff" }}>EVEREST</span>
-            <span style={{ color: "#0e7490" }}>FRAGS</span>
-          </span>
-        </div>
-      </header>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
 
       <Navbar />
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 48px 0", position: "relative", zIndex: 10 }}>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>MÉTRICAS</span>
-          <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+            // métricas · leaderboard por métrica
+          </div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1 }}>
+            MÉTRICAS
+          </div>
         </div>
 
         {/* Pills de seleção de métrica */}
@@ -135,19 +124,19 @@ export function Metrics() {
         )}
 
         {loading && (
-          <div style={{ textAlign: "center", padding: 80, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>
+          <div style={{ textAlign: "center", padding: 80, fontFamily: "'JetBrains Mono', monospace", color: "var(--ef-ghost)" }}>
             carregando...
           </div>
         )}
 
         {!loading && sorted.length === 0 && (
-          <div style={{ textAlign: "center", padding: 80, fontFamily: "'JetBrains Mono', monospace", color: "#3a4757" }}>
+          <div style={{ textAlign: "center", padding: 80, fontFamily: "'JetBrains Mono', monospace", color: "var(--ef-ghost)" }}>
             nenhum jogador com partidas registradas ainda
           </div>
         )}
 
         {!loading && sorted.length > 0 && (
-          <div style={{ border: "1px solid #172029", background: "#0a0e13", marginBottom: 24 }}>
+          <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", marginBottom: 24 }}>
             {sorted.map((e, i) => {
               const value = e[active.key] as number;
               const barW = `${Math.min(100, Math.round((Math.abs(value) / maxValue) * 100))}%`;
@@ -161,7 +150,7 @@ export function Metrics() {
                     cursor: "pointer",
                   }}
                 >
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 14, color: "#3a4757", width: 26 }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 14, color: "var(--ef-ghost)", width: 26 }}>
                     {i + 1}
                   </span>
                   <div style={{

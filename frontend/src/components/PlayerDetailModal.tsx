@@ -1,21 +1,9 @@
 /**
- * PlayerDetailModal — detalhe completo de um player do ranking
- *
- * Aberto ao clicar em qualquer card do ranking (pódio, grade ou lista compacta).
- * Reaproveita o mesmo padrão visual do cartão de identidade do Profile.tsx
- * (radar + barras de categoria + score final) e adiciona a grade de métricas
- * cruas agregadas que agora vêm no RankingEntry (GET /api/ranking já traz tudo).
- *
- * Painel "POR QUE ESSE RANK?" — calculado 100% no cliente a partir de
- * `allEntries` (o ranking completo, já carregado pela página que abre o modal),
- * sem precisar de endpoint novo:
- *   1. Breakdown numérico: quantos pontos do score final vieram de cada categoria
- *   2. Frase automática: maior destaque e maior ponto fraco vs a média do grupo
- *   3. Gap pro próximo/anterior colocado
- * A comparação com a média do grupo (item 4 do pedido) fica embutida como um
- * indicador ▲/▼ direto em cada célula da grade de métricas cruas.
+ * PlayerDetailModal — rebrand "Estação de Altitude" (#3a)
+ * 980px · backdrop blur · header com count-up rating · grid radar+categorias
  */
 
+import { useEffect, useState } from "react";
 import { type RankingEntry } from "../api/client";
 import { RadarChart } from "./RadarChart";
 import { CategoryBar } from "./CategoryBar";
@@ -26,63 +14,30 @@ interface PlayerDetailModalProps {
   onClose: () => void;
 }
 
-// Pesos do score final — devem espelhar WEIGHT_COMBAT/DUEL/UTILITY em
-// backend/app/services/ranking_service.py (pesos fixos, não vêm da API).
-const WEIGHT_COMBAT = 0.30;
-const WEIGHT_DUEL = 0.36;
+const WEIGHT_COMBAT  = 0.30;
+const WEIGHT_DUEL    = 0.36;
 const WEIGHT_UTILITY = 0.34;
 
-// Métricas onde menor valor é melhor — usado tanto na frase automática quanto
-// na cor do indicador ▲/▼ da grade (mesma lista de INVERTED_METRICS do backend).
 const INVERTED_KEYS = new Set<keyof RankingEntry>(["deaths", "time_to_kill_ms", "opening_deaths"]);
 
-// Métricas usadas pra eleger destaque/ponto fraco do player dentro do grupo.
-// `inverted: true` = menor valor é melhor (deaths, TTK).
 const JUDGABLE_METRICS: { key: keyof RankingEntry; label: string; inverted?: boolean }[] = [
-  { key: "hltv_rating", label: "RATING" },
-  { key: "adr", label: "ADR" },
-  { key: "kast_percent", label: "KAST%" },
-  { key: "opening_kills", label: "OPENING KILLS" },
+  { key: "hltv_rating",    label: "RATING" },
+  { key: "adr",            label: "ADR" },
+  { key: "kast_percent",   label: "KAST%" },
+  { key: "opening_kills",  label: "OPENING KILLS" },
   { key: "opening_deaths", label: "OPENING DEATHS", inverted: true },
-  { key: "mvps", label: "MVPs" },
-  { key: "trade_kills", label: "TRADE KILLS" },
-  { key: "trade_denials", label: "TRADE DENIALS" },
-  { key: "flash_assists", label: "FLASH ASSISTS" },
-  { key: "fire_damage", label: "DANO MOLOTOV" },
+  { key: "mvps",           label: "MVPs" },
+  { key: "trade_kills",    label: "TRADE KILLS" },
+  { key: "trade_denials",  label: "TRADE DENIALS" },
+  { key: "flash_assists",  label: "FLASH ASSISTS" },
+  { key: "fire_damage",    label: "DANO MOLOTOV" },
   { key: "grenade_damage", label: "DANO GRANADA" },
-  { key: "deaths", label: "DEATHS", inverted: true },
-  { key: "time_to_kill_ms", label: "TTK", inverted: true },
+  { key: "deaths",         label: "DEATHS", inverted: true },
+  { key: "time_to_kill_ms",label: "TTK", inverted: true },
 ];
 
 interface StatItem { label: string; value: string; key: keyof RankingEntry }
-interface StatGroup { label: string; color: string; stats: StatItem[] }
-
-// Glossário — uma linha por sigla/label usada na grade de métricas abaixo.
-const GLOSSARY: { label: string; desc: string }[] = [
-  { label: "K/D", desc: "Kills dividido por mortes" },
-  { label: "KILLS", desc: "Eliminações" },
-  { label: "DEATHS", desc: "Mortes" },
-  { label: "ASSISTS", desc: "Assistências" },
-  { label: "DANO TOTAL", desc: "Dano total causado na partida" },
-  { label: "ADR", desc: "Dano médio por round (Average Damage per Round)" },
-  { label: "ADR +/-", desc: "ADR do jogador comparado à média da partida" },
-  { label: "RATING", desc: "Rating estimado, estilo HLTV 2.0" },
-  { label: "KAST%", desc: "% de rounds com Kill, Assist, Survived ou Trade" },
-  { label: "ECO KILLS", desc: "Kill contra inimigo com equipamento fraco (< $1000)" },
-  { label: "DESVANTAGEM K", desc: "Kill feito em desvantagem numérica no round" },
-  { label: "VANTAGEM K", desc: "Kill feito em vantagem numérica no round" },
-  { label: "OPENING KILLS", desc: "Primeiro kill do round — abre vantagem numérica" },
-  { label: "OPENING DEATHS", desc: "Primeira morte do round — menor é melhor" },
-  { label: "MVPs", desc: "Rounds com mais kills do time vencedor (desempate por dano)" },
-  { label: "TRADE KILLS", desc: "Vingança: matou quem matou um aliado, em até 5s" },
-  { label: "TRADE DENIALS", desc: "Impediu que o inimigo vingasse um aliado em até 5s" },
-  { label: "TTK (MS)", desc: "Tempo médio entre kills do jogador, em milissegundos (menor é melhor)" },
-  { label: "FLASH ASSISTS", desc: "Cegou um inimigo que foi morto por um aliado em até 3s" },
-  { label: "DANO GRANADA", desc: "Dano causado por granada HE" },
-  { label: "HE HIT", desc: "Nº de inimigos atingidos por granada HE" },
-  { label: "FIRE HIT", desc: "Nº de inimigos atingidos por molotov/incendiária" },
-  { label: "DANO MOLOTOV", desc: "Dano causado por molotov/incendiária" },
-];
+interface StatGroup { label: string; color: string; accent: string; stats: StatItem[] }
 
 function numOf(entry: RankingEntry, key: keyof RankingEntry): number {
   const v = entry[key];
@@ -94,60 +49,77 @@ function groupAverage(entries: RankingEntry[], key: keyof RankingEntry): number 
   return entries.reduce((sum, e) => sum + numOf(e, key), 0) / entries.length;
 }
 
+function useCountUp(target: number, duration = 800, delay = 0) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setValue(target); return; }
+    const timeout = setTimeout(() => {
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min(1, (now - t0) / duration);
+        const eased = 1 - Math.pow(2, -10 * p);
+        setValue(Math.round(target * eased));
+        if (p < 1) requestAnimationFrame(tick); else setValue(target);
+      };
+      requestAnimationFrame(tick);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [target, duration, delay]);
+  return value;
+}
+
 export function PlayerDetailModal({ entry, allEntries, onClose }: PlayerDetailModalProps) {
+  const displayScore = useCountUp(Math.round(entry.score_final), 800, 300);
+
   const groups: StatGroup[] = [
     {
-      label: "COMBATE",
-      color: "#0e7490",
+      label: "COMBATE", color: "#0e7490", accent: "#22d3ee",
       stats: [
-        { label: "K/D", value: entry.kd_ratio.toFixed(2), key: "kd_ratio" },
-        { label: "KILLS", value: String(entry.kills), key: "kills" },
-        { label: "DEATHS", value: String(entry.deaths), key: "deaths" },
-        { label: "ASSISTS", value: String(entry.assists), key: "assists" },
-        { label: "DANO TOTAL", value: String(entry.damage_total), key: "damage_total" },
-        { label: "ADR", value: entry.adr.toFixed(1), key: "adr" },
-        { label: "ADR +/-", value: entry.adr_difference.toFixed(1), key: "adr_difference" },
-        { label: "RATING", value: entry.hltv_rating.toFixed(2), key: "hltv_rating" },
-        { label: "KAST%", value: `${entry.kast_percent.toFixed(0)}%`, key: "kast_percent" },
-        { label: "ECO KILLS", value: String(entry.eco_kills), key: "eco_kills" },
-        { label: "DESVANTAGEM K", value: String(entry.disadvantage_kills), key: "disadvantage_kills" },
-        { label: "VANTAGEM K", value: String(entry.advantage_kills), key: "advantage_kills" },
+        { label: "K/D",          value: entry.kd_ratio.toFixed(2),        key: "kd_ratio" },
+        { label: "KILLS",        value: String(entry.kills),               key: "kills" },
+        { label: "DEATHS",       value: String(entry.deaths),              key: "deaths" },
+        { label: "ASSISTS",      value: String(entry.assists),             key: "assists" },
+        { label: "DANO TOTAL",   value: String(entry.damage_total),        key: "damage_total" },
+        { label: "ADR",          value: entry.adr.toFixed(1),              key: "adr" },
+        { label: "ADR +/-",      value: entry.adr_difference.toFixed(1),   key: "adr_difference" },
+        { label: "RATING",       value: entry.hltv_rating.toFixed(2),      key: "hltv_rating" },
+        { label: "KAST%",        value: `${entry.kast_percent.toFixed(0)}%`, key: "kast_percent" },
+        { label: "ECO KILLS",    value: String(entry.eco_kills),           key: "eco_kills" },
+        { label: "DESVANTAGEM K",value: String(entry.disadvantage_kills),  key: "disadvantage_kills" },
+        { label: "VANTAGEM K",   value: String(entry.advantage_kills),     key: "advantage_kills" },
       ],
     },
     {
-      label: "DUELOS",
-      color: "#6366f1",
+      label: "DUELOS", color: "#6366f1", accent: "#818cf8",
       stats: [
-        { label: "OPENING KILLS", value: String(entry.opening_kills), key: "opening_kills" },
-        { label: "OPENING DEATHS", value: String(entry.opening_deaths), key: "opening_deaths" },
-        { label: "MVPs", value: String(entry.mvps), key: "mvps" },
-        { label: "TRADE KILLS", value: String(entry.trade_kills), key: "trade_kills" },
-        { label: "TRADE DENIALS", value: String(entry.trade_denials), key: "trade_denials" },
-        { label: "TTK (MS)", value: entry.time_to_kill_ms.toFixed(0), key: "time_to_kill_ms" },
+        { label: "OPENING KILLS", value: String(entry.opening_kills),    key: "opening_kills" },
+        { label: "OPENING DEATHS",value: String(entry.opening_deaths),   key: "opening_deaths" },
+        { label: "MVPs",          value: String(entry.mvps),             key: "mvps" },
+        { label: "TRADE KILLS",   value: String(entry.trade_kills),      key: "trade_kills" },
+        { label: "TRADE DENIALS", value: String(entry.trade_denials),    key: "trade_denials" },
+        { label: "TTK (MS)",      value: entry.time_to_kill_ms.toFixed(0), key: "time_to_kill_ms" },
       ],
     },
     {
-      label: "UTILITY",
-      color: "#e0a82e",
+      label: "UTILITY", color: "#e0a82e", accent: "#e8b948",
       stats: [
-        { label: "FLASH ASSISTS", value: String(entry.flash_assists), key: "flash_assists" },
-        { label: "DANO GRANADA", value: String(entry.grenade_damage), key: "grenade_damage" },
-        { label: "HE HIT", value: String(entry.he_enemies_hit), key: "he_enemies_hit" },
-        { label: "FIRE HIT", value: String(entry.fire_enemies_hit), key: "fire_enemies_hit" },
-        { label: "DANO MOLOTOV", value: String(entry.fire_damage), key: "fire_damage" },
+        { label: "FLASH ASSISTS", value: String(entry.flash_assists),    key: "flash_assists" },
+        { label: "DANO GRANADA",  value: String(entry.grenade_damage),   key: "grenade_damage" },
+        { label: "HE HIT",        value: String(entry.he_enemies_hit),   key: "he_enemies_hit" },
+        { label: "FIRE HIT",      value: String(entry.fire_enemies_hit), key: "fire_enemies_hit" },
+        { label: "DANO MOLOTOV",  value: String(entry.fire_damage),      key: "fire_damage" },
       ],
     },
   ];
 
-  // ── Breakdown numérico por categoria ──────────────────────────────────────
   const breakdown = [
-    { label: "COMBATE", color: "#22d3ee", score: entry.score_combat, weight: WEIGHT_COMBAT },
-    { label: "DUELOS", color: "#818cf8", score: entry.score_duel, weight: WEIGHT_DUEL },
-    { label: "UTILITY", color: "#e8b948", score: entry.score_utility, weight: WEIGHT_UTILITY },
+    { label: "COMBATE", color: "#22d3ee", bg: "rgba(34,211,238,0.06)",  border: "rgba(34,211,238,0.18)", score: entry.score_combat,  weight: WEIGHT_COMBAT },
+    { label: "DUELOS",  color: "#818cf8", bg: "rgba(129,140,248,0.06)", border: "rgba(129,140,248,0.18)", score: entry.score_duel,    weight: WEIGHT_DUEL },
+    { label: "UTILITY", color: "#e8b948", bg: "rgba(232,185,72,0.06)",  border: "rgba(232,185,72,0.18)", score: entry.score_utility, weight: WEIGHT_UTILITY },
   ].map(c => ({ ...c, pts: c.score * c.weight }));
   const strongestCategory = breakdown.reduce((a, b) => (b.pts > a.pts ? b : a));
 
-  // ── Frase automática: destaque e ponto fraco vs média do grupo ────────────
   const group = allEntries.length ? allEntries : [entry];
   let best: { label: string; deltaPct: number } | null = null;
   let worst: { label: string; deltaPct: number } | null = null;
@@ -161,185 +133,223 @@ export function PlayerDetailModal({ entry, allEntries, onClose }: PlayerDetailMo
     if (!worst || goodness < worst.deltaPct) worst = { label: m.label, deltaPct: goodness };
   }
 
-  // ── Gap pro próximo/anterior colocado ──────────────────────────────────────
   const sorted = [...group].sort((a, b) => a.rank - b.rank);
   const idx = sorted.findIndex(e => e.player_id === entry.player_id);
-  const better = idx > 0 ? sorted[idx - 1] : null;     // rank acima (melhor)
-  const worse = idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null; // rank abaixo (pior)
+  const better = idx > 0 ? sorted[idx - 1] : null;
+  const worse = idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.74)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24, overflowY: "auto" }}
+      style={{ position: "fixed", inset: 0, background: "rgba(4,7,12,0.72)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24, overflowY: "auto" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ position: "relative", width: 980, maxWidth: "100%", border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "30px 32px 28px", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#0e7490,#6366f1,#e0a82e)" }} />
+      <div style={{
+        position: "relative", width: 980, maxWidth: "100%",
+        background: "var(--ef-bg-elevated)",
+        border: "1px solid var(--ef-border)",
+        borderRadius: "var(--ef-radius-lg)",
+        boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+        maxHeight: "92vh", overflowY: "auto",
+      }}>
+        {/* Barra teal no topo */}
+        <div style={{ position: "sticky", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, transparent, var(--ef-glacier-br), transparent)", borderRadius: "var(--ef-radius-lg) var(--ef-radius-lg) 0 0", zIndex: 2 }} />
 
-        <button
-          onClick={onClose}
-          style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", color: "#566476", fontSize: 19, cursor: "pointer", lineHeight: 1, padding: "2px 4px" }}
-        >
-          ✕
-        </button>
-
-        {/* Identidade */}
-        <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 24 }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "28px 32px 22px", borderBottom: "1px solid var(--ef-border)" }}>
+          {/* Avatar circular 76px */}
           <div style={{
-            width: 64, height: 64, border: "2px solid #0e7490", background: "#04222b",
-            display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-            fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 26, color: "#22d3ee",
-            boxShadow: "0 0 16px rgba(14,116,144,.25)", flexShrink: 0,
+            width: 76, height: 76, borderRadius: "50%", flexShrink: 0,
+            background: "linear-gradient(135deg, #0e7490, #22d3ee)",
+            boxShadow: "0 0 32px rgba(34,211,238,0.30)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            overflow: "hidden",
+            fontFamily: "var(--ef-font-display)", fontWeight: 800, fontSize: 28, color: "#060a10",
           }}>
             {entry.avatar_url
               ? <img src={entry.avatar_url} alt={entry.player_nickname} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               : entry.avatar_initials}
           </div>
+
+          {/* Nickname + pills */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, color: "#f0f9ff", lineHeight: 1 }}>
+            <div style={{ fontFamily: "var(--ef-font-display)", fontWeight: 900, fontSize: 40, letterSpacing: 3, color: "var(--ef-summit)", lineHeight: 1 }}>
               {entry.player_display_name || entry.player_nickname}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8 }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 28, color: "#22d3ee", lineHeight: 1 }}>
-                #{entry.rank}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              {/* Posição + altitude */}
+              <span style={{ fontFamily: "var(--ef-font-mono)", fontSize: 11, color: "var(--ef-ice)", background: "var(--ef-glacier-dim)", border: "1px solid rgba(34,211,238,0.25)", borderRadius: "var(--ef-radius-sm)", padding: "3px 10px" }}>
+                #{entry.rank} · {entry.rank === 1 ? "8 849M" : entry.rank === 2 ? "8 400M" : entry.rank === 3 ? "8 000M" : `${Math.max(5000, 7600 - (entry.rank - 4) * 300)}M`}
               </span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#4a5868" }}>
-                {entry.total_matches} partidas
+              {/* Nível */}
+              <span style={{ fontFamily: "var(--ef-font-mono)", fontSize: 11, color: "#e8b948", background: "rgba(224,168,46,0.08)", border: "1px solid rgba(224,168,46,0.25)", borderRadius: "var(--ef-radius-sm)", padding: "3px 10px" }}>
+                {entry.level_name.toUpperCase()}
+              </span>
+              {/* Partidas */}
+              <span style={{ fontFamily: "var(--ef-font-mono)", fontSize: 11, color: "var(--ef-fog)", padding: "3px 0" }}>
+                {entry.total_matches} partidas · K/D {entry.kd_ratio.toFixed(2)}
               </span>
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 32, color: "#f0f9ff", lineHeight: 1 }}>
-              {Math.round(entry.score_final)}
+
+          {/* EF Rating (count-up) */}
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontFamily: "var(--ef-font-mono)", fontSize: 10, letterSpacing: "2px", color: "var(--ef-ghost)", marginBottom: 2 }}>EF RATING</div>
+            <div style={{ fontFamily: "var(--ef-font-mono)", fontWeight: 700, fontSize: 52, color: "var(--ef-glacier-br)", lineHeight: 1, textShadow: "0 0 40px rgba(34,211,238,0.35)", fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum"' }}>
+              {displayScore}
             </div>
-            <div style={{ fontSize: 9, letterSpacing: "2px", color: "#4a5868", marginTop: 2 }}>SCORE</div>
           </div>
+
+          {/* Botão fechar */}
+          <button
+            onClick={onClose}
+            style={{ width: 36, height: 36, flexShrink: 0, background: "transparent", border: "1px solid var(--ef-border)", borderRadius: "var(--ef-radius-sm)", color: "var(--ef-ghost)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-start" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ef-border-hover)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--ef-fog)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ef-border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--ef-ghost)"; }}
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Radar + barras */}
-        <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 22 }}>
-          <RadarChart
-            adr={entry.score_combat}
-            kast={entry.kast_percent}
-            rating={entry.hltv_rating * 50}
-            openK={entry.score_duel}
-            trade={Math.min(entry.kd_ratio * 33, 100)}
-            util={entry.score_utility}
-            color="#0e7490"
-            size={160}
-          />
-          <div style={{ flex: 1, minWidth: 200, paddingTop: 8 }}>
-            <CategoryBar label="COMBATE" value={entry.score_combat} color="#0e7490" textColor="#22d3ee" height={5} />
-            <CategoryBar label="DUELOS" value={entry.score_duel} color="#6366f1" textColor="#818cf8" height={5} />
-            <CategoryBar label="UTILITY" value={entry.score_utility} color="#e0a82e" textColor="#e8b948" height={5} />
-          </div>
-        </div>
+        {/* Corpo grid 360px + 1fr */}
+        <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 24, padding: "24px 32px" }}>
 
-        {/* Por que esse rank? */}
-        <div style={{ marginBottom: 22, border: "1px solid #1a222c", background: "#0c1015", padding: "14px 16px" }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "2px", color: "#aebccd", marginBottom: 12 }}>
-            POR QUE #{entry.rank}?
-          </div>
-
-          {/* Breakdown numérico */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-            {breakdown.map(b => (
-              <div key={b.label} style={{ flex: 1, textAlign: "center", padding: "8px 4px", background: b.label === strongestCategory.label ? "rgba(255,255,255,.04)" : "transparent", border: b.label === strongestCategory.label ? `1px solid ${b.color}44` : "1px solid transparent" }}>
-                <div style={{ fontSize: 8, letterSpacing: "1px", color: "#5d6d80" }}>{b.label} · {Math.round(b.weight * 100)}%</div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700, color: b.color, marginTop: 2 }}>
-                  {b.pts.toFixed(1)} pts
-                </div>
+          {/* ─── Coluna esquerda: radar + stats rápidos ─── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Card radar */}
+            <div style={{ background: "var(--ef-card)", borderRadius: "var(--ef-radius-md)", padding: 20, border: "1px solid var(--ef-border)" }}>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <RadarChart
+                  adr={entry.score_combat}
+                  kast={entry.kast_percent}
+                  rating={entry.hltv_rating * 50}
+                  openK={entry.score_duel}
+                  trade={Math.min(entry.kd_ratio * 33, 100)}
+                  util={entry.score_utility}
+                  color="#22d3ee"
+                  size={200}
+                />
               </div>
-            ))}
-          </div>
-
-          {/* Frase automática */}
-          {best && worst && (
-            <div style={{ fontSize: 11.5, lineHeight: 1.6, color: "#aebccd", marginBottom: 10 }}>
-              Destaque em <strong style={{ color: "#22d3ee" }}>{best.label}</strong>
-              {best.deltaPct >= 0 ? ` (${best.deltaPct.toFixed(0)}% acima da média do grupo)` : " (próximo da média do grupo)"}.
-              {" "}Ponto a melhorar: <strong style={{ color: "#e8b948" }}>{worst.label}</strong>
-              {worst.deltaPct < 0 ? ` (${Math.abs(worst.deltaPct).toFixed(0)}% abaixo da média do grupo)` : " (mesmo assim, dentro da média)"}.
+              {/* 3 stats resumo */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, marginTop: 16, background: "var(--ef-border)", borderRadius: "var(--ef-radius-sm)", overflow: "hidden" }}>
+                {[
+                  { label: "K/D",   value: entry.kd_ratio.toFixed(2) },
+                  { label: "ADR",   value: entry.adr.toFixed(1) },
+                  { label: "KAST%", value: `${entry.kast_percent.toFixed(0)}%` },
+                ].map(s => (
+                  <div key={s.label} style={{ background: "var(--ef-card)", padding: "10px 6px", textAlign: "center" }}>
+                    <div style={{ fontFamily: "var(--ef-font-mono)", fontWeight: 700, fontSize: 16, color: "var(--ef-snow)", fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum"' }}>{s.value}</div>
+                    <div style={{ fontFamily: "var(--ef-font-mono)", fontSize: 9, letterSpacing: "1.5px", color: "var(--ef-ghost)", marginTop: 2 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
 
-          {/* Gap pro próximo/anterior */}
-          {(better || worse) && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }}>
-              {better && (
-                <div style={{ color: "#64748a" }}>
-                  ▼ <span style={{ color: "#e0a82e" }}>-{(better.score_final - entry.score_final).toFixed(1)} pts</span> para alcançar #{better.rank} ({better.player_display_name || better.player_nickname})
+            {/* Por que esse rank? */}
+            <div style={{ background: "var(--ef-card)", border: "1px solid var(--ef-border)", borderRadius: "var(--ef-radius-md)", padding: "16px 18px" }}>
+              <div style={{ fontFamily: "var(--ef-font-display)", fontWeight: 700, fontSize: 13, letterSpacing: "2px", color: "var(--ef-fog)", marginBottom: 12 }}>
+                POR QUE #{entry.rank}?
+              </div>
+              {/* Breakdown pts */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {breakdown.map(b => (
+                  <div key={b.label} style={{ flex: 1, textAlign: "center", padding: "8px 4px", background: b.label === strongestCategory.label ? b.bg : "transparent", border: `1px solid ${b.label === strongestCategory.label ? b.border : "transparent"}`, borderRadius: "var(--ef-radius-sm)" }}>
+                    <div style={{ fontFamily: "var(--ef-font-mono)", fontSize: 8, letterSpacing: "1px", color: "var(--ef-ghost)" }}>{b.label} · {Math.round(b.weight * 100)}%</div>
+                    <div style={{ fontFamily: "var(--ef-font-mono)", fontSize: 15, fontWeight: 700, color: b.color, marginTop: 2 }}>{b.pts.toFixed(1)}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Frase automática */}
+              {best && worst && (
+                <div style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ef-fog)", marginBottom: 10 }}>
+                  Destaque em <strong style={{ color: "var(--ef-ice)" }}>{best.label}</strong>
+                  {best.deltaPct >= 0 ? ` (+${best.deltaPct.toFixed(0)}% da média)` : ""}.
+                  {" "}Melhorar: <strong style={{ color: "#e8b948" }}>{worst.label}</strong>
+                  {worst.deltaPct < 0 ? ` (${Math.abs(worst.deltaPct).toFixed(0)}% abaixo)` : ""}.
                 </div>
               )}
-              {worse && (
-                <div style={{ color: "#64748a" }}>
-                  ▲ <span style={{ color: "#22d3ee" }}>+{(entry.score_final - worse.score_final).toFixed(1)} pts</span> de vantagem sobre #{worse.rank} ({worse.player_display_name || worse.player_nickname})
+              {/* Gap ranking */}
+              {(better || worse) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, fontFamily: "var(--ef-font-mono)", fontSize: 10 }}>
+                  {better && (
+                    <div style={{ color: "var(--ef-ghost)" }}>
+                      ▼ <span style={{ color: "#e8b948" }}>-{(better.score_final - entry.score_final).toFixed(1)} pts</span> p/ alcançar #{better.rank}
+                    </div>
+                  )}
+                  {worse && (
+                    <div style={{ color: "var(--ef-ghost)" }}>
+                      ▲ <span style={{ color: "var(--ef-ice)" }}>+{(entry.score_final - worse.score_final).toFixed(1)} pts</span> de vantagem s/ #{worse.rank}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Métricas cruas (tabela, à esquerda) + glossário (ao lado, sticky) —
-            flex com wrap: em telas estreitas o glossário desce pra baixo,
-            mesmo padrão responsivo já usado no radar+barras acima. */}
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ flex: "2 1 420px", minWidth: 320 }}>
-            {groups.map(g => (
-              <div key={g.label} style={{ marginBottom: 18 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
-                  <span style={{ width: 9, height: 9, background: g.color, flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "2px", color: "#aebccd" }}>
-                    {g.label}
-                  </span>
-                </div>
-                <div style={{ border: "1px solid #1a222c" }}>
-                  {g.stats.map((s, i) => {
-                    // Delta absoluto vs a média do grupo (não percentual): métricas como
-                    // adr_difference já são uma diferença em si, com média do grupo perto
-                    // de zero por construção — uma % em cima disso explode (ex: 134900%).
-                    const avg = groupAverage(group, s.key);
-                    const raw = numOf(entry, s.key);
-                    const diff = raw - avg;
-                    const showDelta = Math.abs(diff) >= 0.05;
-                    // Seta = direção factual (valor acima/abaixo da média). Cor = julgamento
-                    // de "bom/neutro", invertido pra deaths/TTK (onde menor é melhor).
-                    const isGood = INVERTED_KEYS.has(s.key) ? diff < 0 : diff > 0;
-                    return (
-                      <div
-                        key={s.label}
-                        style={{
-                          display: "grid", gridTemplateColumns: "1fr 56px auto", gap: 10, alignItems: "center",
-                          padding: "7px 12px", background: i % 2 === 0 ? "#0c1015" : "#0a0d12",
-                          borderBottom: i < g.stats.length - 1 ? "1px solid #161e27" : "none",
-                        }}
-                      >
-                        <div style={{ fontSize: 10.5, letterSpacing: "0.5px", color: "#8a98a8" }}>{s.label}</div>
-                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, textAlign: "right", color: showDelta ? (isGood ? "#2dd4bf" : "#f87171") : "#e8b948" }}>
-                          {showDelta ? `${diff > 0 ? "▲+" : "▼"}${diff.toFixed(1)}` : "≈ média"}
-                        </div>
-                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: "#dde6f0", textAlign: "right" }}>
-                          {s.value}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
           </div>
 
-          <div style={{ flex: "1 1 230px", minWidth: 220, position: "sticky", top: 0, border: "1px solid #1a222c", background: "#0c1015", padding: "14px" }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "2px", color: "#5d6d80", marginBottom: 10 }}>
-              GLOSSÁRIO
+          {/* ─── Coluna direita: categorias + métricas ─── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Card CATEGORIAS */}
+            <div style={{ background: "var(--ef-card)", border: "1px solid var(--ef-border)", borderRadius: "var(--ef-radius-md)", padding: "16px 20px" }}>
+              <div style={{ fontFamily: "var(--ef-font-display)", fontWeight: 700, fontSize: 13, letterSpacing: "2px", color: "var(--ef-fog)", marginBottom: 14 }}>
+                CATEGORIAS
+              </div>
+              <CategoryBar label="COMBATE" value={entry.score_combat}  color="#0e7490" textColor="#22d3ee" height={6} />
+              <CategoryBar label="DUELOS"  value={entry.score_duel}    color="#6366f1" textColor="#818cf8" height={6} />
+              <CategoryBar label="UTILITY" value={entry.score_utility} color="#e0a82e" textColor="#e8b948" height={6} />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              {GLOSSARY.map(item => (
-                <div key={item.label} style={{ fontSize: 10.5, lineHeight: 1.5 }}>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "#aebccd", fontWeight: 700 }}>{item.label}</span>
-                  <span style={{ color: "#5d6d80" }}> — {item.desc}</span>
-                </div>
-              ))}
+
+            {/* Métricas cruas por grupo */}
+            <div style={{ background: "var(--ef-card)", border: "1px solid var(--ef-border)", borderRadius: "var(--ef-radius-md)", padding: "16px 20px", flex: 1 }}>
+              <div style={{ fontFamily: "var(--ef-font-display)", fontWeight: 700, fontSize: 13, letterSpacing: "2px", color: "var(--ef-fog)", marginBottom: 14 }}>
+                MÉTRICAS DETALHADAS
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {groups.map(g => (
+                  <div key={g.label} style={{ flex: "1 1 140px", minWidth: 130 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ width: 6, height: 6, background: g.color, borderRadius: "50%" }} />
+                      <span style={{ fontFamily: "var(--ef-font-display)", fontWeight: 700, fontSize: 11, letterSpacing: "2px", color: "var(--ef-fog)" }}>{g.label}</span>
+                    </div>
+                    <div style={{ border: "1px solid var(--ef-border)", borderRadius: "var(--ef-radius-sm)", overflow: "hidden" }}>
+                      {g.stats.map((s, i) => {
+                        const avg = groupAverage(group, s.key);
+                        const raw = numOf(entry, s.key);
+                        const diff = raw - avg;
+                        const showDelta = Math.abs(diff) >= 0.05;
+                        const isGood = INVERTED_KEYS.has(s.key) ? diff < 0 : diff > 0;
+                        return (
+                          <div key={s.label} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 6, alignItems: "center", padding: "5px 8px", background: i % 2 === 0 ? "var(--ef-surface-2)" : "var(--ef-card)" }}>
+                            <div style={{ fontFamily: "var(--ef-font-mono)", fontSize: 9, color: "var(--ef-ghost)" }}>{s.label}</div>
+                            {showDelta && (
+                              <div style={{ fontFamily: "var(--ef-font-mono)", fontSize: 8, color: isGood ? "var(--ef-success)" : "var(--ef-danger)" }}>
+                                {diff > 0 ? "▲" : "▼"}
+                              </div>
+                            )}
+                            <div style={{ fontFamily: "var(--ef-font-mono)", fontWeight: 700, fontSize: 11, color: "var(--ef-snow)", fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum"' }}>
+                              {s.value}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 32px", borderTop: "1px solid var(--ef-border)", background: "rgba(6,10,16,0.4)" }}>
+          <span style={{ fontFamily: "var(--ef-font-mono)", fontSize: 10, color: "var(--ef-ghost)" }}>
+            // dados de {entry.total_matches} partidas · {entry.xp_total.toLocaleString()} XP acumulado
+          </span>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={onClose}
+              style={{ fontFamily: "var(--ef-font-mono)", fontSize: 12, color: "var(--ef-fog)", background: "transparent", border: "1px solid var(--ef-border)", borderRadius: "var(--ef-radius-sm)", padding: "8px 16px", cursor: "pointer" }}
+            >
+              fechar
+            </button>
           </div>
         </div>
       </div>

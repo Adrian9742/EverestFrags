@@ -24,7 +24,12 @@ function Logo() {
   return (
     <Link to="/" viewTransition className="ig-sidebar-logo" aria-label="EverestFrags">
       <span className="ig-sidebar-logo-mark">
-        <img src="/favicon.png" alt="EverestFrags" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img
+          src="/favicon.png"
+          alt="EverestFrags"
+          aria-hidden="true"
+          style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, display: "block", filter: "drop-shadow(0 0 6px rgba(34,211,238,0.45))" }}
+        />
       </span>
       <span className="ig-sidebar-logo-text">
         <strong>EVEREST</strong><b>FRAGS</b>

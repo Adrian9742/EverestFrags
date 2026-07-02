@@ -105,19 +105,19 @@ export function MatchDetail() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#070a0e", color: "#e8e8e8", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
-        <div style={{ textAlign: "center", padding: 60, fontFamily: "'JetBrains Mono', monospace", color: "#444" }}>carregando...</div>
+        <div style={{ textAlign: "center", padding: 60, fontFamily: "'JetBrains Mono', monospace", color: "var(--ef-ghost)" }}>carregando...</div>
       </div>
     );
   }
 
   if (error || !match) {
     return (
-      <div style={{ minHeight: "100vh", background: "#070a0e", color: "#e8e8e8", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif" }}>
         <Navbar />
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 48px" }}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#ff5a33" }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--ef-danger)" }}>
             // {error || "partida não encontrada"}
           </div>
         </div>
@@ -150,11 +150,11 @@ export function MatchDetail() {
   function PlayerRow({ p, isMvp }: { p: PlayerStatsInMatch; isMvp: boolean }) {
     const diff = p.kills - p.deaths;
     return (
-      <tr className={isMvp ? "ef-pulse-glow" : ""} style={{ borderBottom: "1px solid #111", background: isMvp ? "rgba(14,116,144,0.06)" : "transparent" }}>
+      <tr className={isMvp ? "ef-pulse-glow" : ""} style={{ borderBottom: "1px solid var(--ef-border)", background: isMvp ? "rgba(14,116,144,0.06)" : "transparent" }}>
         <td style={{ padding: "10px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 30, height: 30, borderRadius: "50%",
+              width: 32, height: 32, borderRadius: "50%",
               background: avatarGradient(p.player_avatar_initials, p.team),
               display: "flex", alignItems: "center", justifyContent: "center",
               fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 700,
@@ -162,44 +162,58 @@ export function MatchDetail() {
             }}>
               {p.player_avatar_initials.slice(0, 2).toUpperCase()}
             </div>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 600, color: "#d0d0d0" }}>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--ef-snow)" }}>
               {p.player_nickname}
             </span>
           </div>
         </td>
-        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.kills}</td>
-        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.deaths}</td>
-        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#e8e8e8" }}>{p.assists}</td>
-        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: diff > 0 ? "#4ade80" : diff < 0 ? "#ff5a33" : "#888" }}>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--ef-snow)" }}>{p.kills}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--ef-snow)" }}>{p.deaths}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--ef-fog)" }}>{p.assists}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: diff > 0 ? "var(--ef-success)" : diff < 0 ? "var(--ef-danger)" : "var(--ef-ghost)" }}>
           {diff > 0 ? `+${diff}` : diff}
         </td>
-        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#aaa" }}>{p.adr.toFixed(1)}</td>
-        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: "#0e7490" }}>{p.hltv_rating.toFixed(2)}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--ef-fog)" }}>{p.adr.toFixed(1)}</td>
+        <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: "var(--ef-glacier-br)" }}>{p.hltv_rating.toFixed(2)}</td>
       </tr>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#e8e8e8", fontFamily: "'Inter', sans-serif", paddingBottom: 32 }}>
+    <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif", paddingBottom: 32 }}>
+      {/* Atmospheric layers */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 3px,rgba(0,0,0,.08) 4px,rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
       <Navbar />
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 48px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 48px", position: "relative", zIndex: 10 }}>
 
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+        {/* Título */}
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 32, fontWeight: 700, color: "#f4f4f4" }}>
-              {match.map_name ?? `PARTIDA #${match.id}`}
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#5a5a5a", marginTop: 4, display: "flex", gap: 14, alignItems: "center" }}>
-              <span>{match.played_at}</span>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+              // partida · {match.played_at}{match.scope_url ? " · " : ""}
               {match.scope_url && (
-                <a href={match.scope_url} target="_blank" rel="noreferrer" style={{ color: "#0e7490" }}>
+                <a href={match.scope_url} target="_blank" rel="noreferrer" style={{ color: "var(--ef-glacier)", textDecoration: "none" }}>
                   scope.gg ↗
                 </a>
               )}
             </div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1 }}>
+              {match.map_name ? match.map_name.replace("de_", "").toUpperCase() : `PARTIDA #${match.id}`}
+            </div>
+            {match.team_a_score != null && match.team_b_score != null && (
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 8 }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 900, color: match.winning_team === 1 ? "var(--ef-glacier-br)" : "var(--ef-fog)", lineHeight: 1 }}>
+                  {match.team_a_score}
+                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--ef-ghost)" }}>×</span>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 900, color: match.winning_team === 2 ? "var(--ef-glacier-br)" : "var(--ef-fog)", lineHeight: 1 }}>
+                  {match.team_b_score}
+                </span>
+              </div>
+            )}
             {match.notes && (
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#777", marginTop: 8 }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", marginTop: 6 }}>
                 // {match.notes}
               </div>
             )}
@@ -208,7 +222,7 @@ export function MatchDetail() {
           {isAdmin && (
             <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               {error && (
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#ff5a33" }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-danger)" }}>
                   // {error}
                 </span>
               )}
@@ -216,7 +230,7 @@ export function MatchDetail() {
                 <button
                   onClick={handleRemoveResult}
                   disabled={removingResult}
-                  style={{ background: "transparent", border: "1px solid #44403c", color: "#a8a29e", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: 1.5, padding: "10px 18px", cursor: removingResult ? "wait" : "pointer" }}
+                  style={{ background: "transparent", border: "1px solid var(--ef-border)", color: "var(--ef-fog)", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: 1.5, padding: "10px 18px", cursor: removingResult ? "wait" : "pointer", borderRadius: "var(--ef-radius-sm)" }}
                 >
                   {removingResult ? "REMOVENDO..." : "REMOVER RESULTADO"}
                 </button>
@@ -224,7 +238,7 @@ export function MatchDetail() {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                style={{ background: "transparent", border: "1px solid #7f1d1d", color: "#ff5a33", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: 1.5, padding: "10px 18px", cursor: deleting ? "wait" : "pointer" }}
+                style={{ background: "transparent", border: "1px solid rgba(248,113,113,0.4)", color: "var(--ef-danger)", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: 1.5, padding: "10px 18px", cursor: deleting ? "wait" : "pointer", borderRadius: "var(--ef-radius-sm)" }}
               >
                 {deleting ? "DELETANDO..." : "DELETAR PARTIDA"}
               </button>
@@ -236,14 +250,14 @@ export function MatchDetail() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
-              <tr style={{ background: "#101010", borderBottom: "1px solid #1c1c1c" }}>
-                <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 9, letterSpacing: "2px", color: "#5a5a5a", fontWeight: 400 }}>PLAYER</th>
-                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>K</th>
-                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>D</th>
+              <tr style={{ background: "var(--ef-card)", borderBottom: "1px solid var(--ef-border)" }}>
+                <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 9, letterSpacing: "2px", color: "var(--ef-ghost)", fontWeight: 400 }}>PLAYER</th>
+                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "var(--ef-ghost)", fontWeight: 400 }}>K</th>
+                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "var(--ef-ghost)", fontWeight: 400 }}>D</th>
                 <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>A</th>
                 <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>+/-</th>
-                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>ADR</th>
-                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "#5a5a5a", fontWeight: 400 }}>RATING</th>
+                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "var(--ef-ghost)", fontWeight: 400 }}>ADR</th>
+                <th style={{ padding: "10px 8px", textAlign: "center", fontSize: 9, letterSpacing: "1.5px", color: "var(--ef-ghost)", fontWeight: 400 }}>RATING</th>
               </tr>
             </thead>
             <tbody>

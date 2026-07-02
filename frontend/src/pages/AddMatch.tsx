@@ -255,6 +255,8 @@ export function AddMatch() {
         players: selected.map(({ selected: _s, ...stats }) => stats),
         matchups: matchups.length ? matchups : undefined,
         team_winner: (demoTeamWinner === "A" || demoTeamWinner === "B") ? demoTeamWinner : undefined,
+        team_a_score: demoTeamAScore ?? undefined,
+        team_b_score: demoTeamBScore ?? undefined,
       });
       navigate(`/matches/${created.id}`);
     } catch (e: any) {

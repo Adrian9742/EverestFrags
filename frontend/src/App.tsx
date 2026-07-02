@@ -14,7 +14,7 @@
  *   /averages      → público (médias consolidadas da EverestFrags)
  *   /profile       → autenticado (perfil pessoal + alterar senha)
  *   /admin         → admin (gestão de players e partidas)
- *   /chat          → público (placeholder — WebSocket em desenvolvimento)
+ *   /chat          → público (chat em tempo real via WebSocket)
  *
  * Upload de .dem foi unificado em /matches/new — não existe mais rota /demo.
  *

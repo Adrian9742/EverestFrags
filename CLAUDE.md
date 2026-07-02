@@ -1060,3 +1060,25 @@ O router `GET /api/matches` construía `MatchResponse(...)` manualmente sem pass
 para `None`, fazendo o badge "RESULTADO ✓" em `Matches.tsx` nunca aparecer mesmo em partidas
 com resultado registrado. **Fix:** `winning_team=m.winning_team` adicionado ao construtor
 `MatchResponse` na listagem.
+
+---
+
+## Skills disponíveis
+
+### Revenue-Centric Design (`revenue-centric-design`)
+
+**Localização:** `.claude/skills/revenue-centric-design/`
+**Entrada:** `SKILL.md` → 10 arquivos de referência em `references/`
+**Invocar via:** Skill tool (auto-detectado) ou `/rcd` (slash command)
+
+Playbook de **101 princípios** de design de produto para SaaS/startups, destilados dos posts de
+[@richardrx](https://x.com/richardrx) (ex-Volkswagen, PayPal, IBM). Cobre: landing pages / CRO,
+onboarding/ativação, retenção/churn, precificação, ciência comportamental, estratégia de features,
+posicionamento/ICP, GTM e diferenciação na era de IA.
+
+**Quando usar:** ao tomar decisões de UX, copy, fluxo, precificação ou posicionamento do EverestFrags
+que impactem aquisição, ativação, retenção ou diferenciação do produto.
+
+**Restrição absoluta (do autor):** NÃO aplicar a produtos de apostas, cassino, gambling ou
+jogos de azar com dinheiro real — incluindo mecânicas de loot-box. Permissão de reuso concedida
+com essa condição explícita; recusar se solicitado nesses contextos.

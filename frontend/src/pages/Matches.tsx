@@ -70,22 +70,23 @@ export function Matches() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#e8e8e8", fontFamily: "'Inter', sans-serif", paddingBottom: 48 }}>
+    <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif", paddingBottom: 48 }}>
+      {/* Atmospheric layers */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 3px,rgba(0,0,0,.08) 4px,rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
+
       <Navbar />
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px", position: "relative", zIndex: 10 }}>
 
-        {/* Header */}
+        {/* Título */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32 }}>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#22d3ee", marginBottom: 6 }}>
-              HISTÓRICO
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+              // histórico · {total} partidas registradas
             </div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 38, fontWeight: 900, color: "#f0f9ff", lineHeight: 1 }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1 }}>
               PARTIDAS
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a4757", marginTop: 6 }}>
-              {total} partidas registradas
             </div>
           </div>
           {isAdmin && (
@@ -126,8 +127,8 @@ export function Matches() {
                   onMouseLeave={() => setHoverId(null)}
                   style={{
                     display: "flex", alignItems: "stretch",
-                    background: "#0d1218",
-                    border: `1px solid ${isHovered ? accent + "55" : "#1b2530"}`,
+                    background: "var(--ef-card)",
+                    border: `1px solid ${isHovered ? accent + "55" : "var(--ef-border)"}`,
                     borderRadius: 14, overflow: "hidden", cursor: "pointer",
                     transform: isHovered ? "translateY(-2px)" : "none",
                     boxShadow: isHovered ? `0 8px 28px rgba(0,0,0,0.4)` : "none",
@@ -140,8 +141,8 @@ export function Matches() {
                   {/* Número */}
                   <div style={{
                     width: 52, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#2a3a4a",
-                    borderRight: "1px solid #131d27",
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)",
+                    borderRight: "1px solid var(--ef-border)",
                   }}>
                     #{i + 1 + (page - 1) * 20}
                   </div>
@@ -153,12 +154,12 @@ export function Matches() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
                         fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800,
-                        color: "#f0f9ff", letterSpacing: "0.5px", lineHeight: 1,
+                        color: "var(--ef-summit)", letterSpacing: "0.5px", lineHeight: 1,
                       }}>
                         {mapLabel(m.map_name)}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5 }}>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#3a4757" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--ef-ghost)" }}>
                           {formatDate(m.played_at)}
                         </span>
                         {m.scope_url && (
@@ -188,6 +189,18 @@ export function Matches() {
                       <span style={{ fontSize: 9, opacity: 0.7, letterSpacing: "1px" }}>PLAYERS</span>
                     </div>
 
+                    {/* Placar de rounds */}
+                    {m.team_a_score != null && m.team_b_score != null && (
+                      <div style={{
+                        fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 15,
+                        letterSpacing: "0.5px", color: "var(--ef-snow)",
+                        background: "rgba(255,255,255,0.04)", border: "1px solid var(--ef-border)",
+                        borderRadius: 8, padding: "4px 12px", flexShrink: 0,
+                      }}>
+                        {m.team_a_score} <span style={{ color: "var(--ef-ghost)", fontWeight: 400, fontSize: 11 }}>×</span> {m.team_b_score}
+                      </div>
+                    )}
+
                     {/* Resultado registrado */}
                     {m.winning_team != null && (
                       <div style={{
@@ -202,24 +215,24 @@ export function Matches() {
                     )}
 
                     {/* Chevron */}
-                    <div style={{ color: isHovered ? accent : "#1e2d3e", fontSize: 20, flexShrink: 0, transition: "color 0.15s" }}>
+                    <div style={{ color: isHovered ? accent : "var(--ef-border)", fontSize: 20, flexShrink: 0, transition: "color 0.15s" }}>
                       ›
                     </div>
                   </div>
 
                   {/* Delete (admin) */}
                   {isAdmin && (
-                    <div style={{ display: "flex", alignItems: "center", padding: "0 14px", borderLeft: "1px solid #131d27" }}>
+                    <div style={{ display: "flex", alignItems: "center", padding: "0 14px", borderLeft: "1px solid var(--ef-border)" }}>
                       <button
                         onClick={e => { e.stopPropagation(); handleDelete(m.id); }}
                         style={{
-                          background: "transparent", border: "1px solid #1b2530", color: "#3a4757",
+                          background: "transparent", border: "1px solid var(--ef-border)", color: "var(--ef-ghost)",
                           fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
                           padding: "5px 10px", borderRadius: 6, cursor: "pointer",
                           transition: "border-color 0.15s, color 0.15s",
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#ef444466"; e.currentTarget.style.color = "#ef4444"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#1b2530"; e.currentTarget.style.color = "#3a4757"; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(248,113,113,0.4)"; e.currentTarget.style.color = "var(--ef-danger)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ef-border)"; e.currentTarget.style.color = "var(--ef-ghost)"; }}
                       >
                         DEL
                       </button>
@@ -239,9 +252,9 @@ export function Matches() {
                 key={p}
                 onClick={() => load(p)}
                 style={{
-                  background: p === page ? "#0e7490" : "transparent",
-                  border: `1px solid ${p === page ? "#0e7490" : "#1b2530"}`,
-                  color: p === page ? "#fff" : "#3a4757",
+                  background: p === page ? "var(--ef-glacier)" : "transparent",
+                  border: `1px solid ${p === page ? "var(--ef-glacier)" : "var(--ef-border)"}`,
+                  color: p === page ? "#fff" : "var(--ef-ghost)",
                   fontFamily: "'JetBrains Mono', monospace", fontSize: 12,
                   padding: "6px 14px", borderRadius: 8, cursor: "pointer",
                   transition: "all 0.15s",

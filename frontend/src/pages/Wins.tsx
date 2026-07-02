@@ -5,7 +5,7 @@ import { winsApi, type WinsEntry, type UnregisteredMatch } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
 const s: Record<string, React.CSSProperties> = {
-  page:    { minHeight: "100vh", background: "#070a0e", color: "#f0f9ff" },
+  page:    { minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-summit)" },
   inner:   { maxWidth: 860, margin: "0 auto", padding: "48px 24px 80px" },
   header:  { display: "flex", alignItems: "center", gap: 14, marginBottom: 28 },
   title:   { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 26, letterSpacing: "4px", color: "#f0f9ff" },
@@ -68,20 +68,27 @@ export function Wins() {
 
   return (
     <div style={s.page}>
+      {/* Atmospheric layers */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 3px,rgba(0,0,0,.08) 4px,rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
       <Navbar />
-      <main className="ig-main">
+      <main style={{ position: "relative", zIndex: 10 }}>
         <div style={s.inner}>
-          <div style={s.header}>
-            <span style={{ width: 3, height: 24, background: "#0e7490", flexShrink: 0 }} />
-            <span style={s.title}>PLACAR DE VITÓRIAS</span>
-            <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+              // vitórias · placar oficial das expedições
+            </div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1, marginBottom: 12 }}>
+              PLACAR DE VITÓRIAS
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
             {isAdmin && (
               <button
                 onClick={handleSync}
                 disabled={syncing}
                 style={{
-                  background: "transparent", border: "1px solid #1b2530",
-                  color: syncing ? "#3a4d60" : "#0e7490",
+                  background: "transparent", border: "1px solid var(--ef-border)",
+                  color: syncing ? "var(--ef-ghost)" : "var(--ef-glacier)",
                   fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
                   fontSize: 12, letterSpacing: "1.5px", padding: "7px 14px",
                   cursor: syncing ? "wait" : "pointer", flexShrink: 0,
@@ -90,6 +97,7 @@ export function Wins() {
                 {syncing ? "SINCRONIZANDO..." : "SINCRONIZAR"}
               </button>
             )}
+          </div>
           </div>
 
           {syncMsg && (

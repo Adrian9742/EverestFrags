@@ -103,6 +103,9 @@ class MatchCreate(BaseModel):
     played_at: date = Field(..., description="Data em que a partida foi jogada")
     map_name: Optional[str] = Field(None, max_length=50, description="Ex: de_dust2")
     notes: Optional[str] = Field(None, max_length=2000)
+    # Placar de rounds extraído do demo — ex: 13 a 8
+    team_a_score: Optional[int] = Field(None, ge=0, le=40)
+    team_b_score: Optional[int] = Field(None, ge=0, le=40)
 
     @field_validator("scope_url")
     @classmethod
@@ -130,6 +133,8 @@ class MatchResponse(BaseModel):
     player_count: int = 0
     created_at: datetime
     winning_team: Optional[int] = None
+    team_a_score: Optional[int] = None
+    team_b_score: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -147,6 +152,8 @@ class MatchDetailResponse(BaseModel):
     winning_team: Optional[int] = None
     team_1_ids: Optional[list] = None
     team_2_ids: Optional[list] = None
+    team_a_score: Optional[int] = None
+    team_b_score: Optional[int] = None
 
     model_config = {"from_attributes": True}
 

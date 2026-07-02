@@ -318,6 +318,8 @@ export interface MatchCreate {
   players: PlayerStatsCreate[];
   matchups?: MatchupCreate[];
   team_winner?: string;
+  team_a_score?: number;
+  team_b_score?: number;
 }
 
 export interface MatchResponse {
@@ -329,6 +331,8 @@ export interface MatchResponse {
   player_count: number;
   created_at: string;
   winning_team: number | null;
+  team_a_score: number | null;
+  team_b_score: number | null;
 }
 
 export interface PaginatedMatchResponse {
@@ -378,6 +382,8 @@ export interface MatchDetailResponse {
   winning_team: number | null;
   team_1_ids: number[] | null;
   team_2_ids: number[] | null;
+  team_a_score: number | null;
+  team_b_score: number | null;
 }
 
 export const matchesApi = {

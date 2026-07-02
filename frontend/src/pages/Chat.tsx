@@ -88,47 +88,30 @@ export function Chat() {
   if (isLoading || !player) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#dde6f0", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
 
-      {/* Scanlines */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.35 }} />
-
-      {/* Header */}
-      <header style={{ borderBottom: "1px solid #1b2530", background: "linear-gradient(180deg,#0d1218,#070a0e)", padding: "22px 48px", flexShrink: 0 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <div style={{ width: 38, height: 38, border: "2px solid #0e7490", display: "flex", alignItems: "center", justifyContent: "center", background: "#04222b" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M2 21 L9 7 L12.5 13 L15.5 6 L22 21 Z" fill="#0e7490" />
-                <path d="M15.5 6 L13.2 10 L17.8 10 Z" fill="#cfe6ee" />
-                <path d="M9 7 L7.3 10 L10.7 10 Z" fill="#cfe6ee" />
-              </svg>
-            </div>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: 1 }}>
-              <span style={{ color: "#f0f9ff" }}>EVEREST</span>
-              <span style={{ color: "#0e7490" }}>FRAGS</span>
-            </span>
-          </div>
-          {/* Status da conexão */}
-          <div style={{ display: "flex", alignItems: "center", gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "1px", color: connected ? "#34d399" : "#f87171" }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: connected ? "#34d399" : "#f87171", boxShadow: connected ? "0 0 6px #34d399" : "none" }} />
-            {connected ? "CONECTADO" : "DESCONECTADO"}
-          </div>
-        </div>
-      </header>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
 
       <Navbar />
 
       {/* Corpo do chat */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 860, width: "100%", margin: "0 auto", padding: "24px 32px 0", position: "relative", zIndex: 10, boxSizing: "border-box" }}>
 
-        {/* Título */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#0e7490" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 17, letterSpacing: "3px", color: "#5d6d80" }}>CHAT DO GRUPO</span>
-          <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+        {/* Título + status WS */}
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
+          <div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+              // chat · mensagens em tempo real via websocket
+            </div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1 }}>
+              CHAT DO GRUPO
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "1px", color: connected ? "#34d399" : "#f87171", paddingBottom: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: connected ? "#34d399" : "#f87171", boxShadow: connected ? "0 0 6px #34d399" : "none" }} />
+            {connected ? "CONECTADO" : "DESCONECTADO"}
+          </div>
         </div>
 
         {/* Área de mensagens */}

@@ -234,71 +234,59 @@ export function Profile() {
   if (isLoading || !player) return null;
 
   const inputStyle: React.CSSProperties = {
-    width: "100%", background: "#080c11", border: "1px solid #212d3a",
-    color: "#e3ebf3", fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-    padding: "10px 12px", outline: "none", boxSizing: "border-box",
+    width: "100%", background: "rgba(0,0,0,0.3)", border: "1px solid var(--ef-border)",
+    color: "var(--ef-snow)", fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
+    padding: "10px 12px", outline: "none", boxSizing: "border-box", borderRadius: "var(--ef-radius-sm)",
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#070a0e", color: "#dde6f0", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100vh", background: "var(--ef-bg)", color: "var(--ef-snow)", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
 
-      {/* Scanlines */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0) 5px)", opacity: 0.35 }} />
-
-      {/* Header mínimo */}
-      <header style={{ borderBottom: "1px solid #1b2530", background: "linear-gradient(180deg,#0d1218,#070a0e)", padding: "22px 48px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", gap: 18 }}>
-          <div style={{ width: 38, height: 38, border: "2px solid #0e7490", display: "flex", alignItems: "center", justifyContent: "center", background: "#04222b" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M2 21 L9 7 L12.5 13 L15.5 6 L22 21 Z" fill="#0e7490" />
-              <path d="M15.5 6 L13.2 10 L17.8 10 Z" fill="#cfe6ee" />
-              <path d="M9 7 L7.3 10 L10.7 10 Z" fill="#cfe6ee" />
-            </svg>
-          </div>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: 1 }}>
-            <span style={{ color: "#f0f9ff" }}>EVEREST</span>
-            <span style={{ color: "#0e7490" }}>FRAGS</span>
-          </span>
-        </div>
-      </header>
+      {/* Atmospheric layers */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "var(--ef-aurora)" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50, background: "repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 3px,rgba(0,0,0,.08) 4px,rgba(0,0,0,0) 5px)", opacity: 0.2 }} />
 
       <Navbar />
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 48px 0", position: "relative", zIndex: 10 }}>
 
         {/* Título */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "3px", color: "#5d6d80" }}>MEU PERFIL</span>
-          <span style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#1e2a36,transparent)" }} />
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--ef-ghost)", letterSpacing: "0.5px", marginBottom: 4 }}>
+            // perfil · {player.display_name || player.nickname}
+          </div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 34, fontWeight: 900, color: "var(--ef-summit)", letterSpacing: "2px", lineHeight: 1 }}>
+            MEU PERFIL
+          </div>
         </div>
 
         {/* Cartão de identidade */}
-        <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "28px 30px", marginBottom: 24, position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "#0e7490" }} />
+        <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "28px 30px", marginBottom: 24, position: "relative", borderRadius: "var(--ef-radius-md)" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "var(--ef-glacier)", borderRadius: "var(--ef-radius-md) var(--ef-radius-md) 0 0" }} />
           <div style={{ display: "flex", gap: 36, flexWrap: "wrap", alignItems: "flex-start" }}>
 
             {/* Avatar + info básica */}
             <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
               <div style={{
-                width: 72, height: 72, border: "2px solid #0e7490", background: "#04222b",
+                width: 80, height: 80, borderRadius: "50%", border: "2px solid var(--ef-glacier)", background: "rgba(14,116,144,0.15)",
                 display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-                fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, color: "#22d3ee",
-                boxShadow: "0 0 16px rgba(14,116,144,.25)",
+                fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, color: "var(--ef-glacier-br)",
+                boxShadow: "0 0 32px rgba(34,211,238,0.20)",
               }}>
                 {player.avatar_url
                   ? <img src={player.avatar_url} alt={player.nickname} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : player.avatar_initials}
               </div>
               <div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 32, color: "#f0f9ff", lineHeight: 1 }}>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 36, color: "var(--ef-summit)", lineHeight: 1, letterSpacing: "1px" }}>
                   {player.display_name || player.nickname}
                 </div>
                 {player.display_name && (
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: "#4a5868", marginTop: 4 }}>
-                    conta Steam: {player.nickname}
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: "var(--ef-ghost)", marginTop: 4 }}>
+                    // steam: {player.nickname}
                   </div>
                 )}
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "2px", color: player.role === "admin" ? "#22d3ee" : "#566476", marginTop: 6 }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "2px", color: player.role === "admin" ? "var(--ef-glacier-br)" : "var(--ef-ghost)", marginTop: 6 }}>
                   {player.role === "admin" ? "GESTOR" : "PLAYER"}
                 </div>
                 {entry && (
@@ -331,7 +319,7 @@ export function Profile() {
                             <div className="ef-bar-grow" style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, #0e7490, #22d3ee)" }} />
                           </div>
                           {nextXp && (
-                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#334155", marginTop: 3 }}>
+                            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#334155", marginTop: 3, fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum"' }}>
                               {(nextXp - xp).toLocaleString()} XP para o próximo nível
                             </div>
                           )}
@@ -362,9 +350,9 @@ export function Profile() {
                     <CategoryBar label="COMBATE" value={entry.score_combat} color="#0e7490" textColor="#22d3ee" height={5} />
                     <CategoryBar label="DUELOS"  value={entry.score_duel}   color="#6366f1" textColor="#818cf8" height={5} />
                     <CategoryBar label="UTILITY" value={entry.score_utility} color="#e0a82e" textColor="#e8b948" height={5} />
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 28, color: "#f0f9ff", marginTop: 14 }}>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 28, color: "#22d3ee", marginTop: 14, fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum"' }}>
                       {Math.round(entry.score_final)}
-                      <span style={{ fontSize: 10, color: "#566476", marginLeft: 6 }}>SCORE</span>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "2px", color: "#566476", marginLeft: 8, textTransform: "uppercase" }}>SCORE</span>
                     </div>
                   </div>
                 </div>
@@ -389,9 +377,9 @@ export function Profile() {
               { label: "HLTV RATING", value: entry.hltv_rating.toFixed(2) },
               { label: "KAST%",       value: `${entry.kast_percent.toFixed(0)}%` },
             ].map(s => (
-              <div key={s.label} style={{ border: "1px solid #1e2a36", background: "#0e141b", padding: "14px 16px" }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 22, color: "#22d3ee" }}>{s.value}</div>
-                <div style={{ fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868", marginTop: 4 }}>{s.label}</div>
+              <div key={s.label} style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "14px 16px", borderRadius: "var(--ef-radius-sm)" }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 22, color: "#22d3ee", fontVariantNumeric: "tabular-nums", fontFeatureSettings: '"tnum"' }}>{s.value}</div>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 9.5, letterSpacing: "1.5px", color: "#4a5868", marginTop: 4, textTransform: "uppercase" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -399,7 +387,7 @@ export function Profile() {
 
         {/* Evolução histórica — gráfico de HLTV Rating por partida */}
         {history.length >= 2 && (
-          <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "24px 28px", marginBottom: 24, position: "relative" }}>
+          <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "24px 28px", marginBottom: 24, position: "relative", borderRadius: "var(--ef-radius-md)" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#e0a82e,transparent)" }} />
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "2px", color: "#e3ebf3", marginBottom: 4 }}>
               EVOLUÇÃO — HLTV RATING
@@ -459,7 +447,7 @@ export function Profile() {
           </div>
 
         {/* Apelido — nome de exibição editável, separado do nickname sincronizado com a Steam */}
-        <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "24px 28px", marginBottom: 24, position: "relative" }}>
+        <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "24px 28px", marginBottom: 24, position: "relative", borderRadius: "var(--ef-radius-md)" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#0e7490,transparent)" }} />
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "2px", color: "#e3ebf3", marginBottom: 8 }}>
             APELIDO
@@ -491,7 +479,7 @@ export function Profile() {
         </div>
 
         {/* Identidade — bio, mapa favorito, país */}
-        <div style={{ border: "1px solid #1e2a36", background: "linear-gradient(180deg,#0f161d,#0a0e13)", padding: "24px 28px", marginBottom: 24, position: "relative" }}>
+        <div style={{ border: "1px solid var(--ef-border)", background: "var(--ef-card)", padding: "24px 28px", marginBottom: 24, position: "relative", borderRadius: "var(--ef-radius-md)" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#e0a82e,transparent)" }} />
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "2px", color: "#e3ebf3", marginBottom: 6 }}>
             IDENTIDADE

@@ -38,6 +38,10 @@ class Match(Base):
     # Anotações livres do gestor (ex: "deu lag no server")
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # Placar de rounds — extraído do .dem (ex: 13-8). nullable para partidas antigas.
+    team_a_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    team_b_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # Sistema de vitórias — preenchido ao registrar resultado após o sorteio
     team_1_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)   # player_ids do time 1
     team_2_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)   # player_ids do time 2

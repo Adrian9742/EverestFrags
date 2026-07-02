@@ -5,7 +5,61 @@
    Shape: bordas arredondadas (18px divs, 14px inputs/buttons, 999px spans)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ============================================================
+   Design tokens — rebrand "Estação de Altitude"
+   ============================================================ */
+:root {
+  /* superfícies */
+  --ef-bg:            #060a10;
+  --ef-bg-elevated:   #0a1018;
+  --ef-card:          #0d141d;
+  --ef-card-hover:    #111a26;
+  --ef-surface-2:     #111820;
+  --ef-border:        rgba(148,197,233,0.08);
+  --ef-border-hover:  rgba(148,197,233,0.18);
+
+  /* glacier + acentos */
+  --ef-glacier:       #0e7490;
+  --ef-glacier-br:    #22d3ee;
+  --ef-glacier-dim:   rgba(14,116,144,0.14);
+  --ef-ice:           #9ddcf0;
+  --ef-indigo:        #6366f1;
+  --ef-indigo-br:     #818cf8;
+  --ef-gold:          #e0a82e;
+  --ef-gold-br:       #e8b948;
+
+  /* texto */
+  --ef-summit:        #f0f9ff;
+  --ef-snow:          #dde6f0;
+  --ef-fog:           #7a8ca1;
+  --ef-ghost:         #45566b;
+
+  /* semânticas */
+  --ef-success:       #34d399;
+  --ef-danger:        #f87171;
+
+  /* forma — 3 valores apenas */
+  --ef-radius-sm:     8px;
+  --ef-radius-md:     12px;
+  --ef-radius-lg:     16px;
+
+  /* atmosfera */
+  --ef-aurora:        radial-gradient(ellipse at 50% -20%, rgba(14,116,144,0.06), transparent 60%);
+  --ef-glow-card:     0 8px 32px rgba(14,116,144,0.12);
+  --ef-glow-hero:     0 0 48px rgba(34,211,238,0.35);
+
+  /* tipografia */
+  --ef-font-display:  'Barlow Condensed', sans-serif;
+  --ef-font-body:     'Inter', sans-serif;
+  --ef-font-mono:     'JetBrains Mono', monospace;
+
+  /* sidebar */
+  --ef-sidebar-closed: 74px;
+  --ef-sidebar-open:   232px;
+  --ef-feed-max-width: 1120px;
+}
 
 /* Transição suave entre páginas (View Transitions API — Link/NavLink com
    prop `viewTransition`, suportado nativamente pelo react-router-dom 6.30+).
@@ -28,7 +82,7 @@ html, body, #root {
 }
 
 body {
-  background: #070a0e;
+  background: var(--ef-bg);
   color: #dde6f0;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
@@ -50,11 +104,9 @@ input:focus, select:focus, textarea:focus, button:focus {
 ::-webkit-scrollbar-thumb { background: #1e2a36; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #2a3a4c; }
 
-/* Bordas arredondadas globais (shape language do rebrand) */
-div[style*="border:1px solid"], div[style*="border:2px solid"] { border-radius: 18px; overflow: hidden; }
-span[style*="border:1px solid"], span[style*="border:2px solid"] { border-radius: 999px; }
-input, select, textarea { border-radius: 14px; }
-button { border-radius: 14px; }
+/* Forma — inputs e botões usam radius-sm por padrão */
+input, select, textarea { border-radius: var(--ef-radius-sm); }
+button { border-radius: var(--ef-radius-sm); }
 input[type=range] { border-radius: 999px; }
 
 /* ==========================================================================
@@ -105,6 +157,25 @@ input[type=range] { border-radius: 999px; }
   to { transform: rotate(360deg); }
 }
 
+/* Rebrand — novos keyframes "Estação de Altitude" */
+@keyframes efRise  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes efFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes efPulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+@keyframes efDraw  { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes efBar   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes efGlow  {
+  0%, 100% { box-shadow: 0 0 40px rgba(34,211,238,0.10); }
+  50%      { box-shadow: 0 0 72px rgba(34,211,238,0.22); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Classes utilitárias */
 .ef-fade-in          { animation: efFadeIn 0.35s ease-out both; }
 .ef-slide-left       { animation: efSlideInLeft 0.35s ease-out both; }
@@ -128,10 +199,51 @@ input[type=range] { border-radius: 999px; }
 .ef-delay-12 { animation-delay: 720ms; }
 
 /* ==========================================================================
-   Tipografia utilitária
+   Tipografia utilitária — sistema de 3 fontes EverestFrags
+   .ef-display → Barlow Condensed (títulos, posições, labels grandes)
+   .ef-label   → Barlow Condensed uppercase com letter-spacing (section headers)
+   .ef-mono    → JetBrains Mono + tabular-nums (dados numéricos, stats)
+   .ef-stat    → JetBrains Mono + tabular-nums + negrito (número de destaque)
    ========================================================================== */
+.ef-display {
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.ef-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.ef-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+.ef-stat {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 700;
+}
+/* Aliases legados — manter enquanto houver referências inline antigas */
 .font-display { font-family: 'Barlow Condensed', sans-serif; }
-.font-mono { font-family: 'JetBrains Mono', monospace; }
+.font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+/* Card com hover atmosférico */
+.ef-card {
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.ef-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--ef-border-hover) !important;
+  box-shadow: var(--ef-glow-card);
+}
+
+/* Animações rebrand — utilitárias */
+.ef-rise  { animation: efRise  0.5s cubic-bezier(0.16,1,0.3,1) both; }
+.ef-float { animation: efFloat 3s ease-in-out infinite; }
+.ef-pulse { animation: efPulse 1.6s ease-in-out infinite; }
+.ef-glow  { animation: efGlow  3s ease-in-out infinite; }
 
 /* ==========================================================================
    Social UX v3 — feed estilo rede social + sidebar minimalista expansível
@@ -278,8 +390,8 @@ button {
 }
 
 .ig-sidebar-item.active {
-  color: #f8fafc;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(99, 102, 241, 0.14));
+  color: var(--ef-summit);
+  background: var(--ef-glacier-dim);
 }
 
 .ig-sidebar-item.active::before {
@@ -1452,12 +1564,6 @@ button {
    Center Fix v2 — correção definitiva do miolo do app
    Esta parte precisa ficar no FINAL do index.css.
    ========================================================================== */
-
-:root {
-  --ef-sidebar-closed: 74px;
-  --ef-sidebar-open: 232px;
-  --ef-feed-max-width: 1120px;
-}
 
 /* A sidebar é fixa. Ela não deve "empurrar" o grid para uma posição estranha. */
 body .ig-sidebar {
